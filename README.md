@@ -11,7 +11,7 @@ The method differs from similar methods such as Pierce and Schott (2012) in the 
 (ii) we provide information on units of quantity reporting in CN, PC and CN to PC. This is crucial in obtaining correct unit values.
 
 ## Running the correspondences
-To obtain the lists and correspondences, coy the folder, set the correct absolute folder path for your system and run notebooks > master.do. This creates all the necessary output. Raw datasets are in "raw", which might need to be unzipped first. Final datasets are available in "clean", in both .dta (Stata) and .csv formats for further use.
+To obtain the lists and correspondences, copy the folder, set the correct absolute folder path for your system and run notebooks > master.do. This creates all the necessary output. Raw datasets are in "raw", which might need to be unzipped first. Final datasets are available in "clean", in both .dta (Stata) and .csv formats for further use.
 
 The file summary_datasets.xlsx contains summary statistics of the clean datasets for reference.
 
