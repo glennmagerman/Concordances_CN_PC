@@ -14,6 +14,8 @@ You can find all correspondences in /output. Final datasets are available in bot
 2. Inside /src, open _main.do. Change the absolute path to your location.
 3. Run /src/_main.do. This file calls all codes, creates subdirectories as needed, and creates all outputs in /output. 
 
+Raw files are in /input. Codes are in /src. Output is generated in /output. /hand contains a short list of codes that are hard-coded (mappings of aggregated PC8 codes into their disaggregates with awkward mapping descriptions). /checks contains a cross-check with the mappings from Van Beveren et al. (2012), for the years that overlap.
+
 ## Remarks
 If you use any of these listings, correspondences or mappings, please cite "Correspondences of EU Product Classifications", by Cedric Duprez and Glenn Magerman (2022).
 
