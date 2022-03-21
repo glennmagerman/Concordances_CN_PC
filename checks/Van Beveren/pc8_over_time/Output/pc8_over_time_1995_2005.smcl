@@ -1,0 +1,4200 @@
+{smcl}
+{txt}{sf}{ul off}{.-}
+       log:  {res}C:\Users\n06017\Documents\Magic Briefcase\pc8_over_time\output\pc8_over_time_1995_2005.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res} 1 Aug 2012, 07:03:46
+{txt}
+{com}. 
+. 
+. ****************************************************    
+. *** Step 0: preparation of files: optional codes ***
+. ****************************************************
+. * file with all optional codes between 1993 and 2005: optional_codes_1993_2005
+. * file with all N-list codes between 1993-2005: Nlist_codes_1993_2005
+. * Starting 2005, all optional (B-list) and N-list codes have been abolished.
+. 
+.                 
+. * 0/ Generate a file with all optional codes that feature during the chosen sample period (between `b' and `e')
+.         * and their corresponding mandatory codes
+.         * this file needs to be merged with prodcom data (before concording the data) 
+.                 * and with CN8-PC8 concordance in final year of the data period
+.                 * merge with CN8-PC8 concordance is only necessary when concording production and trade data
+.                 * and will only affect PC8 codes that were optional at some point during sample period and mandatory later on
+.                 * for these codes, we need to keep the more aggregated PC code throughout
+.                 * if concordance period starts after 2004, not necessary to run this step (if condition at start ensures this)
+.         
+.         if `b' < 2005 {c -(}
+.                 
+.                 if `e' < 2005 {c -(}
+.                         local f = `e' 
+.                         {c )-}
+.                 
+.                 if `e' >= 2005 {c -(}
+.                         local f = 2004 
+.                         {c )-}
+.                 
+.                 use PC_`b'_Blist, clear
+.                         forval x = `b1' / `f' {c -(}
+{txt}  2{com}.                                 append using PC_`x'_Blist
+{txt}  3{com}.                                 {c )-}
+.                 
+.                 duplicates drop
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(6573 observations deleted)
+{com}.                 tostring pc, replace
+{txt}pc was {res:long} now {res:str8}
+{com}.                 rename pc pc8
+.                 sort pc8
+.                 merge pc8 using optional_codes_1993_2005
+.                 tab _m
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          2 {c |}{res}        130       11.65       11.65
+{txt}          3 {c |}{res}        986       88.35      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,116      100.00
+{com}.                 drop if _m==2
+{txt}(130 observations deleted)
+{com}.                         * _m==1 should not occur
+.                 drop _m
+.                 sort pc8
+.         save optional_codes_`b'_`e'_sample, replace
+{txt}(note: file optional_codes_1995_2005_sample.dta not found)
+file optional_codes_1995_2005_sample.dta saved
+{com}.         {c )-}
+{txt}
+{com}.                         
+. 
+. * 1/ create concordance of PC8 over time with mandatory codes only
+.         * need to recode all codes that have been optional at some point in time
+.         * in some cases, optional code later becomes mandatory
+.         * in these cases, we keep the more aggregated code during the whole sample period
+.         * Remark: when merging with CN8 using CN8-PC8 concordance file, 
+.                 * these optional codes that become mandatory at some point will also have to be recoded in the CN8-PC8 concordance file!
+.         
+.                 insheet using input_file_PC_over_time_edited.csv, clear delimit(";")
+{txt}(15 vars, 8005 obs)
+
+{com}.                         * this file is an edited version of Eurostat's original files with changes over time
+.                         * For instance, when concording data between 1998 and 2006, many optional codes would drop out in 2005
+.                                 * i.e. the optional code would be listed as "obsolete" and no "new" code would be given
+.                                 * if we would simply replace the optional code by its mandatory code in all of these cases
+.                                 * we would drop these mandatory codes from the data because they are not covered in all years
+.                                 * However, in the majority of cases, the mandatory code does not drop out, only the optional breakdown disappears
+.                                 * In these cases, we have manually entered the mandatory code as the "new" code in the input file
+.                                 * IF the mandatory code continues to exist in the next year (verified in Prodcom structure files)
+.                         * Similar corrections have been applied for aggregate codes (Z, T, Q) and for the N-list codes
+.                         * Original Eurostat file can be found in the folder "Originals Ramon"
+.                          
+.                         drop pcfrom_recode pcto_recode
+{txt}
+{com}.                 
+.         if `b' < 2005 {c -(}
+.                 
+.                 * merge obsolete codes with file with optional codes to recode them
+.                         rename pcfrom pc8
+.                         sort pc8
+.                         count
+{res} 8005
+{com}.                         merge pc8 using optional_codes_`b'_`e'_sample
+{txt}{p 0 4}
+variable{txt} pc8
+does not uniquely identify observations in
+the master data
+{p_end}
+{com}.                         tab _m
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      6,999       87.41       87.41
+{txt}          2 {c |}{res}          2        0.02       87.44
+{txt}          3 {c |}{res}      1,006       12.56      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      8,007      100.00
+{com}.                         replace pc8 = pc_mand if _m==3
+{txt}(1006 real changes made)
+{com}.                         drop if _m==2
+{txt}(2 observations deleted)
+{com}.                         count
+{res} 8005
+{com}.                         rename pc8 pcfrom
+.                 
+.                 * merge new codes with file with optional codes to recode them
+.                         rename pcto pc8
+.                         sort pc8
+.                         count
+{res} 8005
+{com}.                         drop _m
+.                         merge pc8 using optional_codes_`b'_`e'_sample
+{txt}{p 0 4}
+variable{txt} pc8
+does not uniquely identify observations in
+the master data
+{p_end}
+{com}.                         tab _m
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      7,832       88.72       88.72
+{txt}          2 {c |}{res}        823        9.32       98.04
+{txt}          3 {c |}{res}        173        1.96      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      8,828      100.00
+{com}.                         replace pc8 = pc_mand if _m==3
+{txt}(173 real changes made)
+{com}.                         drop if _m==2
+{txt}(823 observations deleted)
+{com}.                         rename pc8 pcto
+.                         
+.                 {c )-}
+{txt}
+{com}.                         
+.                 * drop duplicate lines (resulting from changes in optional codes that imply no changes in mandatory codes)
+.                         drop opt n v10 v12 source v14 _m pc_mand
+{txt}
+{com}.                         
+.                         rename to effyr
+{txt}
+{com}.                         drop from
+{txt}
+{com}.                         rename pcfrom obsolete
+{txt}
+{com}.                         rename pcto new
+{txt}
+{com}. 
+.                         replace obsolete="" if obsolete=="-----"
+{txt}(1 real change made)
+
+{com}.                         replace new="" if new=="-----"
+{txt}(1 real change made)
+
+{com}.                         replace obsolete="" if obsolete=="--"
+{txt}(1 real change made)
+
+{com}.                         
+.                         duplicates drop
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(684 observations deleted)
+
+{com}.                         drop if obsolete==new & ex=="" & v9==""
+{txt}(397 observations deleted)
+
+{com}.                                 * ex variables indicate partial mapping
+.                         drop v15 ex v9
+{txt}
+{com}.                 save temp, replace
+{txt}(note: file temp.dta not found)
+file temp.dta saved
+
+{com}. 
+. * 2/ drop all Q, T, Z and N codes from concordance over time file
+.                         * N and B codes are recoded (see 1/ for B-codes)
+.                         * Q, T, and Z codes are more aggregated versions of existing PC codes
+.                         * these codes should not feature in the prodcom data, since countries are required to report PC data at the most detailed level
+.                         * In the concordance files between CN8 and PC8, the PC8 codes feature in their more aggregate versions
+.                                 * T and Q codes feature both in aggregated and disaggregated  form, but Z-codes only feature in their more aggregate form 
+.                                 * hence, when concording CN8-PC8 (either to PC8 or HS6), disaggregated counterparts of Z-codes need to be recoded 
+.                                 * both in the prodcom list files for each year and in the data (cfr. section 3.4 in the paper)
+.                         * All of these "special" codes (optional (N- or B-list), T, Q, Z) can be found in the prodcom structure files
+.                                 * PDF, access or excel files for each year
+.         
+.         * N-codes: do not feature in concordance file
+.         * Q, T and Z-codes: 
+.                 use TZQlist_codes_1993_2010.dta, replace
+{txt}
+{com}.                         * compiled from prodcom structure files in different years
+.                         drop year
+{txt}
+{com}.                         sort pc
+{txt}
+{com}.                         duplicates drop
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(1988 observations deleted)
+
+{com}.                         sort pc
+{txt}
+{com}.                 save tqz_temp, replace
+{txt}(note: file tqz_temp.dta not found)
+file tqz_temp.dta saved
+
+{com}.         
+.                 use temp, clear
+{txt}
+{com}.                         rename obsolete pc
+{txt}
+{com}.                         sort pc
+{txt}
+{com}.                         merge pc using tqz_temp
+{txt}{p 0 4}
+variable{txt} pc
+does not uniquely identify observations in
+the master data
+{p_end}
+pc was {res}str8{txt} now {res}str9
+{txt}
+{com}.                         tab _m
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      6,705       95.92       95.92
+{txt}          2 {c |}{res}         66        0.94       96.87
+{txt}          3 {c |}{res}        219        3.13      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      6,990      100.00
+{txt}
+{com}.                         drop if _m==3 | _m==2
+{txt}(285 observations deleted)
+
+{com}.                                 * can be dropped, if recoding was required this is done in the input file
+.                         rename pc obsolete
+{txt}
+{com}.                         drop _m
+{txt}
+{com}.                         
+.                         rename new pc
+{txt}
+{com}.                         sort pc
+{txt}
+{com}.                         merge pc using tqz_temp
+{txt}{p 0 4}
+variable{txt} pc
+does not uniquely identify observations in
+the master data
+{p_end}
+pc was {res}str8{txt} now {res}str9
+{txt}
+{com}.                         tab _m
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      6,646       95.93       95.93
+{txt}          2 {c |}{res}        223        3.22       99.15
+{txt}          3 {c |}{res}         59        0.85      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      6,928      100.00
+{txt}
+{com}.                         drop if _m==3 | _m==2
+{txt}(282 observations deleted)
+
+{com}.                                 * idem, can be dropped, if recoding was required this is done in the input file
+.                         rename pc new
+{txt}
+{com}.                         drop _m
+{txt}
+{com}.                 save input_file_PC_over_time_edited, replace
+{txt}(note: file input_file_PC_over_time_edited.dta not found)
+file input_file_PC_over_time_edited.dta saved
+
+{com}.                 erase tqz_temp.dta
+{txt}
+{com}.                 
+. ******************************************************* 
+. *** Step 1: preparation of files: identify mappings ***
+. *******************************************************
+. 
+. * Need to identify different type of mappings between PC8 in t and t+1 (effyr)
+. * i.e. growing or shrinking families respectively.
+. 
+. * base file: conversion_pc_overtime_input.xls
+.         * three Eurostat base files: "PRODCOM_YEARLY_UPDATE_OF_CODES_SINCE_1994.xls" (until 2009), "prodcom 1994 - prodcom 1993.pdf" (translated into excel) and "PRC 2010- PRC 2009.xls" 
+.         * concordance only contains "regular codes", no B-list, N-list, Q-, Z- or T-list codes.
+.         * B-list and N-list codes might feature in the data, need to be recoded into mandatory codes where necessary
+.         
+.         use input_file_PC_over_time_edited, clear 
+{txt}
+{com}.                         sort new
+{txt}
+{com}.                 
+.                         
+. * rename vars + procedure to break up codes (spaces need to removed) and put them back together as strings
+.         /* Effyr is the "To" year in the original file, e.g. correspondence bw t-1 and t, effyr==t */
+.         
+.         * exit and entry dummy:
+.         gen exit=0
+{txt}
+{com}.         replace exit=1 if new==""
+{txt}(223 real changes made)
+
+{com}.         gen entry=0
+{txt}
+{com}.         replace entry=1 if obsolete==""
+{txt}(154 real changes made)
+
+{com}.         
+.         * Identify one-to-many codes:
+.                 * Note: for now, these include many-to-many codes, correction below
+.         sort effyr obsolete new
+{txt}
+{com}.         gen temp=1 if obsolete==obsolete[_n-1 ]& new!=new[_n-1] & exit!=1 & entry!=1
+{txt}(6073 missing values generated)
+
+{com}.         sort effyr obsolete
+{txt}
+{com}.         by effyr obsolete: egen one_many=max(temp)
+{txt}(5682 missing values generated)
+
+{com}.         replace one_many=0 if one_many==.
+{txt}(5682 real changes made)
+
+{com}.         drop temp
+{txt}
+{com}.         
+.         
+.         * Identify many-to-one codes:
+.                 * Note: for now, these include many-to-many codes, correction below
+.         sort effyr new obsolete
+{txt}
+{com}.         gen temp=1 if new==new[_n-1 ]& obsolete!=obsolete[_n-1] & exit!=1       & entry!=1
+{txt}(5101 missing values generated)
+
+{com}.         sort effyr new
+{txt}
+{com}.         by effyr new: egen many_one=max(temp)
+{txt}(4268 missing values generated)
+
+{com}.         replace many_one=0 if many_one==.
+{txt}(4268 real changes made)
+
+{com}.         drop temp
+{txt}
+{com}.         
+.         * identify many-to-many codes:
+.                 * these have to be assigned unique setyr using loop below
+.         gen temp=1 if many_one==1 & one_many==1
+{txt}(6051 missing values generated)
+
+{com}.         sort effyr obsolete
+{txt}
+{com}.         by effyr obsolete: egen temp2=max(temp)
+{txt}(5917 missing values generated)
+
+{com}.         sort effyr new
+{txt}
+{com}.         by effyr new: egen many_many=max(temp2)
+{txt}(5704 missing values generated)
+
+{com}.         replace many_many=0 if many_many==.
+{txt}(5704 real changes made)
+
+{com}.         replace many_many=0 if exit==1 | entry==1
+{txt}(65 real changes made)
+
+{com}.         replace one_many=0 if exit==1 | entry==1
+{txt}(24 real changes made)
+
+{com}.         replace many_one=0 if exit==1 | entry==1
+{txt}(22 real changes made)
+
+{com}.         
+.         * Identify simple codes:
+.         gen simple=0
+{txt}
+{com}.         replace simple=1 if many_many==0 & one_many==0 & many_one==0 & exit==0 & entry==0
+{txt}(3568 real changes made)
+
+{com}.         
+.         * Correction one-to-many and many-to-one coding:
+.                 * many-to-many codes need to be taken out.
+.         replace one_many=0 if many_many==1
+{txt}(722 real changes made)
+
+{com}.         replace many_one=0 if many_many==1
+{txt}(750 real changes made)
+
+{com}. 
+.         * check: sum of simple, one-many, many-one, many-many, exit and entry should equal 1 (not more, not less):
+.         drop temp temp2
+{txt}
+{com}.         egen temp=rowtotal(simple one_many many_one many_many exit entry)
+{txt}
+{com}.         tab temp
+
+       {txt}temp {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      6,646      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      6,646      100.00
+{txt}
+{com}.         
+. save temp, replace
+{txt}file temp.dta saved
+
+{com}. tab effyr
+
+      {txt}effyr {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+       1994 {c |}{res}         99        1.49        1.49
+{txt}       1995 {c |}{res}         82        1.23        2.72
+{txt}       1996 {c |}{res}        145        2.18        4.91
+{txt}       1998 {c |}{res}          2        0.03        4.94
+{txt}       1999 {c |}{res}        129        1.94        6.88
+{txt}       2000 {c |}{res}         21        0.32        7.19
+{txt}       2001 {c |}{res}        132        1.99        9.18
+{txt}       2002 {c |}{res}        122        1.84       11.01
+{txt}       2003 {c |}{res}        543        8.17       19.18
+{txt}       2004 {c |}{res}         44        0.66       19.85
+{txt}       2005 {c |}{res}        313        4.71       24.56
+{txt}       2006 {c |}{res}          4        0.06       24.62
+{txt}       2007 {c |}{res}        287        4.32       28.93
+{txt}       2008 {c |}{res}      4,644       69.88       98.81
+{txt}       2009 {c |}{res}         29        0.44       99.25
+{txt}       2010 {c |}{res}         50        0.75      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      6,646      100.00
+{txt}
+{com}. 
+. 
+. **************************************************************  
+. *** Step 2: Generate setyr's for changes between t and t-1 ***
+. **************************************************************
+. * Loop 1        
+. * Generate setyr's that will be used to verify feedback effects
+. * for many-many mappings between t and t-1
+.                 
+. * define the relevant numlist
+. * why: there are no change in PC8 in some years, need to take this into account
+. 
+. if `b'!=1996 {c -(}
+.         keep if effyr >= `b1' & effyr <= `e'
+{txt}(5195 observations deleted)
+{com}.         levelsof effyr, local(pcyr)     
+{txt}1996 1998 1999 2000 2001 2002 2003 2004 2005
+{com}.         * we also need local with effyr's +1 (like b and b1)
+.                 gen effyr1 = effyr 
+.                 replace effyr1 = . if effyr == `b1'
+{txt}(145 real changes made, 145 to missing)
+{com}.                 tab effyr1
+
+     {txt}effyr1 {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+       1998 {c |}{res}          2        0.15        0.15
+{txt}       1999 {c |}{res}        129        9.88       10.03
+{txt}       2000 {c |}{res}         21        1.61       11.64
+{txt}       2001 {c |}{res}        132       10.11       21.75
+{txt}       2002 {c |}{res}        122        9.34       31.09
+{txt}       2003 {c |}{res}        543       41.58       72.66
+{txt}       2004 {c |}{res}         44        3.37       76.03
+{txt}       2005 {c |}{res}        313       23.97      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,306      100.00
+{com}.                 levelsof effyr1, local(pcyr1)
+{txt}1998 1999 2000 2001 2002 2003 2004 2005
+{com}.         {c )-}
+{txt}
+{com}. 
+. if `b'==1996 {c -(}
+.         keep if effyr >= `b1' & effyr <= `e'
+.         levelsof effyr, local(pcyr)     
+.         * we also need local with effyr's +1 (like b and b1)
+.                 gen effyr1 = effyr 
+.                 replace effyr1 = . if effyr == `b1'
+.                 replace effyr1 = . if effyr == 1998
+.                 tab effyr1
+.                 levelsof effyr1, local(pcyr1)
+.         {c )-}
+{txt}
+{com}.         
+.         
+.         foreach yr of local pcyr {c -(}
+{txt}  2{com}.                 use temp, clear
+{txt}  3{com}.                 keep if effyr==`yr'
+{txt}  4{com}.                 
+.                 sort effyr one_many many_one
+{txt}  5{com}.                         * create groupings for one_many:
+.                         egen tmp=group(obsolete) if one_many==1
+{txt}  6{com}.         
+.                 * create groupings for many_one:
+.                         * Numbering needs to start after numbering for one_many:
+.                         bysort effyr: egen tmpno=max(tmp)
+{txt}  7{com}.                         if tmpno==. {c -(}
+{txt}  8{com}.                                 * if there are no 1-M groups
+.                                 drop tmpno
+{txt}  9{com}.                                 gen tmpno=0
+{txt} 10{com}.                                 {c )-}
+{txt} 11{com}.                         egen tmp2=group(new) if many_one==1 
+{txt} 12{com}.                         gen tmp3=tmpno + tmp2
+{txt} 13{com}.                         drop tmpno 
+{txt} 14{com}. 
+.                 * create groupings for many-many:
+.                         bysort effyr: egen tmpno=max(tmp3)
+{txt} 15{com}.                         if tmpno==. {c -(}
+{txt} 16{com}.                                 * if there are no M-1 groups
+.                                 drop tmpno
+{txt} 17{com}.                                 egen tmpno=max(tmp)
+{txt} 18{com}.                                 {c )-}
+{txt} 19{com}.                         if tmpno==. {c -(}
+{txt} 20{com}.                                 * if there are no 1-M groups
+.                                 drop tmpno
+{txt} 21{com}.                                 gen tmpno=0
+{txt} 22{com}.                                 {c )-}
+{txt} 23{com}. 
+.                         egen tmp4=group(obsolete) if many_many==1
+{txt} 24{com}.                                 * we could group on new here as well, needs to be checked for feedback effects anyway
+.                         gen tmp5=tmpno + tmp4
+{txt} 25{com}.                         drop tmpno
+{txt} 26{com}. 
+.                 * create groupings for simple changes:
+.                         bysort effyr: egen tmpno=max(tmp5)
+{txt} 27{com}.                         if tmpno==. {c -(}
+{txt} 28{com}.                                 * if there are no M-M mappings
+.                                 drop tmpno
+{txt} 29{com}.                                 egen tmpno=max(tmp3)
+{txt} 30{com}.                                 {c )-}
+{txt} 31{com}.                         if tmpno==. {c -(}
+{txt} 32{com}.                                 * if there are no M-1 groups
+.                                 drop tmpno
+{txt} 33{com}.                                 egen tmpno=max(tmp)
+{txt} 34{com}.                                 {c )-}
+{txt} 35{com}.                         if tmpno==. {c -(}
+{txt} 36{com}.                                 * if there are no 1-M groups
+.                                 drop tmpno
+{txt} 37{com}.                                 gen tmpno=0
+{txt} 38{com}.                                 {c )-}
+{txt} 39{com}.                         egen tmp6=group(obsolete) if simple==1
+{txt} 40{com}.                         gen tmp7=tmpno + tmp6
+{txt} 41{com}.                         drop tmpno
+{txt} 42{com}.         
+.                 egen tmp8= rowtotal(tmp tmp3 tmp5 tmp7)
+{txt} 43{com}.                 gen tmp9=.`yr'
+{txt} 44{com}.                 egen code=concat(tmp8 tmp9)
+{txt} 45{com}.                 destring code, replace
+{txt} 46{com}.                 drop tmp tmp2-tmp9 temp 
+{txt} 47{com}.                 
+.                 * obsolete and new codes need to numeric
+.                         destring obsolete, g(obsoletenum)
+{txt} 48{com}.                         destring new, g(newnum)
+{txt} 49{com}. 
+.                 
+.                 keep effyr obsolete new exit entry one_many many_one many_many simple obsoletenum newnum code
+{txt} 50{com}.                 
+.                 save temp_`yr', replace
+{txt} 51{com}.                 {c )-}
+{txt}(6501 observations deleted)
+(139 missing values generated)
+(76 missing values generated)
+(76 missing values generated)
+(116 missing values generated)
+(116 missing values generated)
+(133 missing values generated)
+(133 missing values generated)
+code has all characters numeric; {res}replaced {txt}as {res}double
+{txt}obsolete has all characters numeric; obsoletenum {res}generated {txt}as {res}long
+{txt}(15 missing values generated)
+new has all characters numeric; newnum {res}generated {txt}as {res}long
+{txt}(14 missing values generated)
+(note: file temp_1996.dta not found)
+file temp_1996.dta saved
+(6644 observations deleted)
+(2 missing values generated)
+(2 missing values generated)
+(2 missing values generated)
+(2 missing values generated)
+(2 missing values generated)
+(2 missing values generated)
+(2 missing values generated)
+(2 missing values generated)
+(2 missing values generated)
+(2 missing values generated)
+(2 missing values generated)
+(2 missing values generated)
+(2 missing values generated)
+code has all characters numeric; {res}replaced {txt}as {res}double
+{txt}obsolete has all characters numeric; obsoletenum {res}generated {txt}as {res}long
+{txt}new has all characters numeric; newnum {res}generated {txt}as {res}byte
+{txt}(2 missing values generated)
+(note: file temp_1998.dta not found)
+file temp_1998.dta saved
+(6517 observations deleted)
+(129 missing values generated)
+(129 missing values generated)
+(67 missing values generated)
+(67 missing values generated)
+(127 missing values generated)
+(127 missing values generated)
+(127 missing values generated)
+(127 missing values generated)
+code has all characters numeric; {res}replaced {txt}as {res}double
+{txt}obsolete has all characters numeric; obsoletenum {res}generated {txt}as {res}long
+{txt}(60 missing values generated)
+new has all characters numeric; newnum {res}generated {txt}as {res}long
+{txt}(3 missing values generated)
+(note: file temp_1999.dta not found)
+file temp_1999.dta saved
+(6625 observations deleted)
+(17 missing values generated)
+(11 missing values generated)
+(11 missing values generated)
+(15 missing values generated)
+(15 missing values generated)
+(20 missing values generated)
+(20 missing values generated)
+code has all characters numeric; {res}replaced {txt}as {res}double
+{txt}obsolete has all characters numeric; obsoletenum {res}generated {txt}as {res}long
+{txt}new has all characters numeric; newnum {res}generated {txt}as {res}long
+{txt}(note: file temp_2000.dta not found)
+file temp_2000.dta saved
+(6514 observations deleted)
+(113 missing values generated)
+(30 missing values generated)
+(30 missing values generated)
+(121 missing values generated)
+(121 missing values generated)
+(132 missing values generated)
+(132 missing values generated)
+code has all characters numeric; {res}replaced {txt}as {res}double
+{txt}obsolete has all characters numeric; obsoletenum {res}generated {txt}as {res}long
+{txt}new has all characters numeric; newnum {res}generated {txt}as {res}long
+{txt}(note: file temp_2001.dta not found)
+file temp_2001.dta saved
+(6524 observations deleted)
+(118 missing values generated)
+(88 missing values generated)
+(88 missing values generated)
+(44 missing values generated)
+(44 missing values generated)
+(119 missing values generated)
+(119 missing values generated)
+code has all characters numeric; {res}replaced {txt}as {res}double
+{txt}obsolete has all characters numeric; obsoletenum {res}generated {txt}as {res}long
+{txt}(3 missing values generated)
+new has all characters numeric; newnum {res}generated {txt}as {res}long
+{txt}(note: file temp_2002.dta not found)
+file temp_2002.dta saved
+(6103 observations deleted)
+(531 missing values generated)
+(521 missing values generated)
+(521 missing values generated)
+(243 missing values generated)
+(243 missing values generated)
+(347 missing values generated)
+(347 missing values generated)
+code has all characters numeric; {res}replaced {txt}as {res}double
+{txt}obsolete has all characters numeric; obsoletenum {res}generated {txt}as {res}long
+{txt}(12 missing values generated)
+new has all characters numeric; newnum {res}generated {txt}as {res}long
+{txt}(1 missing value generated)
+(note: file temp_2003.dta not found)
+file temp_2003.dta saved
+(6602 observations deleted)
+(42 missing values generated)
+(22 missing values generated)
+(22 missing values generated)
+(28 missing values generated)
+(28 missing values generated)
+(43 missing values generated)
+(43 missing values generated)
+code has all characters numeric; {res}replaced {txt}as {res}double
+{txt}obsolete has all characters numeric; obsoletenum {res}generated {txt}as {res}long
+{txt}(2 missing values generated)
+new has all characters numeric; newnum {res}generated {txt}as {res}long
+{txt}(1 missing value generated)
+(note: file temp_2004.dta not found)
+file temp_2004.dta saved
+(6333 observations deleted)
+(297 missing values generated)
+(89 missing values generated)
+(89 missing values generated)
+(313 missing values generated)
+(313 missing values generated)
+(313 missing values generated)
+(306 missing values generated)
+(306 missing values generated)
+code has all characters numeric; {res}replaced {txt}as {res}double
+{txt}obsolete has all characters numeric; obsoletenum {res}generated {txt}as {res}long
+{txt}(1 missing value generated)
+new has all characters numeric; newnum {res}generated {txt}as {res}long
+{txt}(65 missing values generated)
+(note: file temp_2005.dta not found)
+file temp_2005.dta saved
+
+{com}.         
+.         
+.                 
+. * loop to identify feedback effects M-M groupings within a year 
+.         * For now, we ignore entry and exit codes (changes in coverage over time)
+.                 * Based on Pierce and Schott (2012)
+.         * Explanation of loop:
+.                 * function mod(`zzz', 2) is used to switch even and odd turns in the loop
+.                 * modulus(x,y) = x - y * int(x/y)
+.                 * equal to 0 if zzz=2, 4, 6, 8, ... 
+.                 * different from 0 for zzz=3, 5, 7, ...
+.                 * each time the setyr's are grouped by new or obsolete
+.                 * equivalent to sorting in excel by new and obsolete
+.                 * to identify feedback effects
+.          
+. foreach yr of local pcyr {c -(}
+{txt}  2{com}.          
+.          use temp_`yr', clear
+{txt}  3{com}. 
+.          bysort new: egen c1 = min(code)
+{txt}  4{com}.                 * assign min setyr by new (we grouped by obsolete above for M-M)
+.                  local zzz = 2
+{txt}  5{com}.                  local stop = 0
+{txt}  6{com}.                  while `stop'==0 {c -(}
+{txt}  7{com}.                  noisily display [`zzz']
+{txt}  8{com}.                  local zlag = `zzz'-1
+{txt}  9{com}.                  if mod(`zzz',2)==0 {c -(}
+{txt} 10{com}.                         bysort obsolete: egen c`zzz'= min(c`zlag')
+{txt} 11{com}.                   {c )-}
+{txt} 12{com}.                  if mod(`zzz',2)~=0 {c -(}
+{txt} 13{com}.                         bysort new: egen c`zzz'= min(c`zlag')
+{txt} 14{com}.                   {c )-}
+{txt} 15{com}.          
+.                  compare c`zzz' c`zlag'
+{txt} 16{com}.                  gen idx = c`zzz'==c`zlag'
+{txt} 17{com}.                  tab idx
+{txt} 18{com}.                  local stop = r(r)==1
+{txt} 19{com}.                  local zzz = `zzz'+1
+{txt} 20{com}.                  display r(r) " " [`stop']
+{txt} 21{com}.                  drop idx
+{txt} 22{com}.                  {c )-}
+{txt} 23{com}.   
+.         local yyy = `zzz' - 1
+{txt} 24{com}.         gen setyr = c`yyy'
+{txt} 25{com}.         drop c1-c`yyy'
+{txt} 26{com}.  
+. * Verify coding:
+. 
+.        sort new 
+{txt} 27{com}.        count if new==new[_n-1] & setyr!=setyr[_n-1]
+{txt} 28{com}.  
+.        sort obsolete
+{txt} 29{com}.        count if obsolete==obsolete[_n-1] & setyr!=setyr[_n-1]
+{txt} 30{com}.   
+. * recode, so setyr are numbered consecutively 
+.        sort effyr setyr
+{txt} 31{com}.        egen group=group(setyr)
+{txt} 32{com}.        gen tmp=.
+{txt} 33{com}.        egen tmp2=concat(group tmp effyr)
+{txt} 34{com}.        destring tmp2, gen(setyr2)
+{txt} 35{com}.        drop setyr tmp tmp2
+{txt} 36{com}.        rename setyr2 setyr
+{txt} 37{com}.  
+. * prepare file for subsequent analysis:
+.         drop code
+{txt} 38{com}.         format setyr %9.4fc
+{txt} 39{com}.         sort obsoletenum newnum effyr 
+{txt} 40{com}. save temp2_`yr', replace
+{txt} 41{com}.         rename newnum new`yr'
+{txt} 42{com}.         rename obsoletenum obs`yr'
+{txt} 43{com}.         rename setyr setyr`yr'
+{txt} 44{com}.         rename effyr effyr`yr'
+{txt} 45{com}.         order obs`yr' new`yr'
+{txt} 46{com}.         sort obs`yr'
+{txt} 47{com}.                         
+. save temp_xchain_`yr', replace
+{txt} 48{com}. {c )-}
+2
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c2<c1                   {res}        4            -1           -1          -1
+{txt}c2=c1                   {res}      141
+{txt}{col 24}{hline 10}
+jointly defined         {res}      145            -1    -.0275862           0
+{txt}{col 24}{hline 10}
+total                   {res}      145
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}          4        2.76        2.76
+{txt}          1 {c |}{res}        141       97.24      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        145      100.00
+2 0
+3
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c3<c2                   {res}        3            -1           -1          -1
+{txt}c3=c2                   {res}      142
+{txt}{col 24}{hline 10}
+jointly defined         {res}      145            -1    -.0206897           0
+{txt}{col 24}{hline 10}
+total                   {res}      145
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}          3        2.07        2.07
+{txt}          1 {c |}{res}        142       97.93      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        145      100.00
+2 0
+4
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c4=c3                   {res}      145
+{txt}{col 24}{hline 10}
+jointly defined         {res}      145             0            0           0
+{txt}{col 24}{hline 10}
+total                   {res}      145
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}        145      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        145      100.00
+1 1
+    1
+    1
+{txt}(145 missing values generated)
+tmp2 has all characters numeric; setyr2 {res}generated {txt}as {res}double
+{txt}(note: file temp2_1996.dta not found)
+file temp2_1996.dta saved
+(note: file temp_xchain_1996.dta not found)
+file temp_xchain_1996.dta saved
+2
+
+{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c2=c1                   {res}        2
+{txt}{col 24}{hline 10}
+jointly defined         {res}        2             0            0           0
+{txt}{col 24}{hline 10}
+total                   {res}        2
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}          2      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}          2      100.00
+1 1
+    1
+    0
+{txt}(2 missing values generated)
+tmp2 has all characters numeric; setyr2 {res}generated {txt}as {res}double
+{txt}(note: file temp2_1998.dta not found)
+file temp2_1998.dta saved
+(note: file temp_xchain_1998.dta not found)
+file temp_xchain_1998.dta saved
+2
+
+{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c2=c1                   {res}      129
+{txt}{col 24}{hline 10}
+jointly defined         {res}      129             0            0           0
+{txt}{col 24}{hline 10}
+total                   {res}      129
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}        129      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        129      100.00
+1 1
+    1
+    1
+{txt}(129 missing values generated)
+tmp2 has all characters numeric; setyr2 {res}generated {txt}as {res}double
+{txt}(note: file temp2_1999.dta not found)
+file temp2_1999.dta saved
+(note: file temp_xchain_1999.dta not found)
+file temp_xchain_1999.dta saved
+2
+
+{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c2<c1                   {res}        1            -1           -1          -1
+{txt}c2=c1                   {res}       20
+{txt}{col 24}{hline 10}
+jointly defined         {res}       21            -1     -.047619           0
+{txt}{col 24}{hline 10}
+total                   {res}       21
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}          1        4.76        4.76
+{txt}          1 {c |}{res}         20       95.24      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}         21      100.00
+2 0
+3
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c3=c2                   {res}       21
+{txt}{col 24}{hline 10}
+jointly defined         {res}       21             0            0           0
+{txt}{col 24}{hline 10}
+total                   {res}       21
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}         21      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}         21      100.00
+1 1
+    0
+    0
+{txt}(21 missing values generated)
+tmp2 has all characters numeric; setyr2 {res}generated {txt}as {res}double
+{txt}(note: file temp2_2000.dta not found)
+file temp2_2000.dta saved
+(note: file temp_xchain_2000.dta not found)
+file temp_xchain_2000.dta saved
+2
+
+{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c2<c1                   {res}        2            -1           -1          -1
+{txt}c2=c1                   {res}      130
+{txt}{col 24}{hline 10}
+jointly defined         {res}      132            -1    -.0151515           0
+{txt}{col 24}{hline 10}
+total                   {res}      132
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}          2        1.52        1.52
+{txt}          1 {c |}{res}        130       98.48      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        132      100.00
+2 0
+3
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c3=c2                   {res}      132
+{txt}{col 24}{hline 10}
+jointly defined         {res}      132             0            0           0
+{txt}{col 24}{hline 10}
+total                   {res}      132
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}        132      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        132      100.00
+1 1
+    0
+    0
+{txt}(132 missing values generated)
+tmp2 has all characters numeric; setyr2 {res}generated {txt}as {res}double
+{txt}(note: file temp2_2001.dta not found)
+file temp2_2001.dta saved
+(note: file temp_xchain_2001.dta not found)
+file temp_xchain_2001.dta saved
+2
+
+{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c2<c1                   {res}       18            -6    -3.277778          -1
+{txt}c2=c1                   {res}      104
+{txt}{col 24}{hline 10}
+jointly defined         {res}      122            -6    -.4836066           0
+{txt}{col 24}{hline 10}
+total                   {res}      122
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}         18       14.75       14.75
+{txt}          1 {c |}{res}        104       85.25      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        122      100.00
+2 0
+3
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c3<c2                   {res}       13            -6    -2.307692          -1
+{txt}c3=c2                   {res}      109
+{txt}{col 24}{hline 10}
+jointly defined         {res}      122            -6    -.2459016           0
+{txt}{col 24}{hline 10}
+total                   {res}      122
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}         13       10.66       10.66
+{txt}          1 {c |}{res}        109       89.34      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        122      100.00
+2 0
+4
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c4<c3                   {res}        1            -1           -1          -1
+{txt}c4=c3                   {res}      121
+{txt}{col 24}{hline 10}
+jointly defined         {res}      122            -1    -.0081967           0
+{txt}{col 24}{hline 10}
+total                   {res}      122
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}          1        0.82        0.82
+{txt}          1 {c |}{res}        121       99.18      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        122      100.00
+2 0
+5
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c5<c4                   {res}        2            -1           -1          -1
+{txt}c5=c4                   {res}      120
+{txt}{col 24}{hline 10}
+jointly defined         {res}      122            -1    -.0163934           0
+{txt}{col 24}{hline 10}
+total                   {res}      122
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}          2        1.64        1.64
+{txt}          1 {c |}{res}        120       98.36      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        122      100.00
+2 0
+6
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c6<c5                   {res}        2            -1           -1          -1
+{txt}c6=c5                   {res}      120
+{txt}{col 24}{hline 10}
+jointly defined         {res}      122            -1    -.0163934           0
+{txt}{col 24}{hline 10}
+total                   {res}      122
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}          2        1.64        1.64
+{txt}          1 {c |}{res}        120       98.36      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        122      100.00
+2 0
+7
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c7<c6                   {res}        2            -1           -1          -1
+{txt}c7=c6                   {res}      120
+{txt}{col 24}{hline 10}
+jointly defined         {res}      122            -1    -.0163934           0
+{txt}{col 24}{hline 10}
+total                   {res}      122
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}          2        1.64        1.64
+{txt}          1 {c |}{res}        120       98.36      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        122      100.00
+2 0
+8
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c8=c7                   {res}      122
+{txt}{col 24}{hline 10}
+jointly defined         {res}      122             0            0           0
+{txt}{col 24}{hline 10}
+total                   {res}      122
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}        122      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        122      100.00
+1 1
+    0
+    1
+{txt}(122 missing values generated)
+tmp2 has all characters numeric; setyr2 {res}generated {txt}as {res}double
+{txt}(note: file temp2_2002.dta not found)
+file temp2_2002.dta saved
+(note: file temp_xchain_2002.dta not found)
+file temp_xchain_2002.dta saved
+2
+
+{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c2<c1                   {res}      108           -45    -8.620371          -1
+{txt}c2=c1                   {res}      435
+{txt}{col 24}{hline 10}
+jointly defined         {res}      543           -45    -1.714549           0
+{txt}{col 24}{hline 10}
+total                   {res}      543
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}        108       19.89       19.89
+{txt}          1 {c |}{res}        435       80.11      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        543      100.00
+2 0
+3
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c3<c2                   {res}      107           -43    -11.19626          -1
+{txt}c3=c2                   {res}      436
+{txt}{col 24}{hline 10}
+jointly defined         {res}      543           -43    -2.206262           0
+{txt}{col 24}{hline 10}
+total                   {res}      543
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}        107       19.71       19.71
+{txt}          1 {c |}{res}        436       80.29      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        543      100.00
+2 0
+4
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c4<c3                   {res}       65           -41    -11.93846          -1
+{txt}c4=c3                   {res}      478
+{txt}{col 24}{hline 10}
+jointly defined         {res}      543           -41    -1.429098           0
+{txt}{col 24}{hline 10}
+total                   {res}      543
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}         65       11.97       11.97
+{txt}          1 {c |}{res}        478       88.03      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        543      100.00
+2 0
+5
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c5<c4                   {res}       70           -41        -14.4          -1
+{txt}c5=c4                   {res}      473
+{txt}{col 24}{hline 10}
+jointly defined         {res}      543           -41    -1.856354           0
+{txt}{col 24}{hline 10}
+total                   {res}      543
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}         70       12.89       12.89
+{txt}          1 {c |}{res}        473       87.11      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        543      100.00
+2 0
+6
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c6<c5                   {res}       40           -18      -15.825   -7.000004
+{txt}c6=c5                   {res}      503
+{txt}{col 24}{hline 10}
+jointly defined         {res}      543           -18    -1.165746           0
+{txt}{col 24}{hline 10}
+total                   {res}      543
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}         40        7.37        7.37
+{txt}          1 {c |}{res}        503       92.63      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        543      100.00
+2 0
+7
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c7<c6                   {res}       24           -18    -15.95833   -7.000004
+{txt}c7=c6                   {res}      519
+{txt}{col 24}{hline 10}
+jointly defined         {res}      543           -18    -.7053407           0
+{txt}{col 24}{hline 10}
+total                   {res}      543
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}         24        4.42        4.42
+{txt}          1 {c |}{res}        519       95.58      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        543      100.00
+2 0
+8
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c8<c7                   {res}        8           -18      -16.375   -7.000004
+{txt}c8=c7                   {res}      535
+{txt}{col 24}{hline 10}
+jointly defined         {res}      543           -18    -.2412523           0
+{txt}{col 24}{hline 10}
+total                   {res}      543
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}          8        1.47        1.47
+{txt}          1 {c |}{res}        535       98.53      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        543      100.00
+2 0
+9
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c9<c8                   {res}        5           -16    -8.800003   -7.000004
+{txt}c9=c8                   {res}      538
+{txt}{col 24}{hline 10}
+jointly defined         {res}      543           -16    -.0810313           0
+{txt}{col 24}{hline 10}
+total                   {res}      543
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}          5        0.92        0.92
+{txt}          1 {c |}{res}        538       99.08      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        543      100.00
+2 0
+10
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c10<c9                  {res}        7           -16    -8.285718   -7.000004
+{txt}c10=c9                  {res}      536
+{txt}{col 24}{hline 10}
+jointly defined         {res}      543           -16     -.106814           0
+{txt}{col 24}{hline 10}
+total                   {res}      543
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}          7        1.29        1.29
+{txt}          1 {c |}{res}        536       98.71      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        543      100.00
+2 0
+11
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c11<c10                 {res}        4           -16          -16         -16
+{txt}c11=c10                 {res}      539
+{txt}{col 24}{hline 10}
+jointly defined         {res}      543           -16    -.1178637           0
+{txt}{col 24}{hline 10}
+total                   {res}      543
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}          4        0.74        0.74
+{txt}          1 {c |}{res}        539       99.26      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        543      100.00
+2 0
+12
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c12<c11                 {res}        6           -16          -16         -16
+{txt}c12=c11                 {res}      537
+{txt}{col 24}{hline 10}
+jointly defined         {res}      543           -16    -.1767956           0
+{txt}{col 24}{hline 10}
+total                   {res}      543
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}          6        1.10        1.10
+{txt}          1 {c |}{res}        537       98.90      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        543      100.00
+2 0
+13
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c13=c12                 {res}      543
+{txt}{col 24}{hline 10}
+jointly defined         {res}      543             0            0           0
+{txt}{col 24}{hline 10}
+total                   {res}      543
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}        543      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        543      100.00
+1 1
+    1
+    1
+{txt}(543 missing values generated)
+tmp2 has all characters numeric; setyr2 {res}generated {txt}as {res}double
+{txt}(note: file temp2_2003.dta not found)
+file temp2_2003.dta saved
+(note: file temp_xchain_2003.dta not found)
+file temp_xchain_2003.dta saved
+2
+
+{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c2<c1                   {res}        2            -2         -1.5          -1
+{txt}c2=c1                   {res}       42
+{txt}{col 24}{hline 10}
+jointly defined         {res}       44            -2    -.0681818           0
+{txt}{col 24}{hline 10}
+total                   {res}       44
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}          2        4.55        4.55
+{txt}          1 {c |}{res}         42       95.45      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}         44      100.00
+2 0
+3
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c3=c2                   {res}       44
+{txt}{col 24}{hline 10}
+jointly defined         {res}       44             0            0           0
+{txt}{col 24}{hline 10}
+total                   {res}       44
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}         44      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}         44      100.00
+1 1
+    1
+    1
+{txt}(44 missing values generated)
+tmp2 has all characters numeric; setyr2 {res}generated {txt}as {res}double
+{txt}(note: file temp2_2004.dta not found)
+file temp2_2004.dta saved
+(note: file temp_xchain_2004.dta not found)
+file temp_xchain_2004.dta saved
+2
+
+{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c2=c1                   {res}      313
+{txt}{col 24}{hline 10}
+jointly defined         {res}      313             0            0           0
+{txt}{col 24}{hline 10}
+total                   {res}      313
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}        313      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        313      100.00
+1 1
+    1
+    1
+{txt}(313 missing values generated)
+tmp2 has all characters numeric; setyr2 {res}generated {txt}as {res}double
+{txt}(note: file temp2_2005.dta not found)
+file temp2_2005.dta saved
+(note: file temp_xchain_2005.dta not found)
+file temp_xchain_2005.dta saved
+
+{com}. 
+. 
+. *** Create file for all years between `b' and `e' ***
+.          * we need this later on
+. 
+. 
+. if `b1'!=1997 {c -(}                                                   
+.         use temp2_`b1', clear
+.                         
+.                 foreach x of local pcyr1 {c -(}
+{txt}  2{com}.                                 append using temp2_`x'
+{txt}  3{com}.                         save PC_setyr_`b'_`e', replace
+{txt}  4{com}.                         {c )-} 
+{txt}(note: file PC_setyr_1995_2005.dta not found)
+file PC_setyr_1995_2005.dta saved
+file PC_setyr_1995_2005.dta saved
+file PC_setyr_1995_2005.dta saved
+file PC_setyr_1995_2005.dta saved
+file PC_setyr_1995_2005.dta saved
+file PC_setyr_1995_2005.dta saved
+file PC_setyr_1995_2005.dta saved
+file PC_setyr_1995_2005.dta saved
+{com}.         {c )-}
+{txt}
+{com}.         
+. if `b1'==1997 {c -(}                                                   
+.         use temp2_1998, clear
+.                 foreach x of local pcyr1 {c -(}
+{txt}  2{com}.                                 append using temp2_`x'
+{txt}  3{com}.                         save PC_setyr_`b'_`e', replace
+{txt}  4{com}.                         {c )-} 
+.         {c )-}
+{txt}
+{com}.         
+. use PC_setyr_`b'_`e', clear
+{txt}
+{com}.         duplicates drop
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(5 observations deleted)
+
+{com}.         sort obsoletenum newnum effyr
+{txt}
+{com}. save PC_setyr_`b'_`e', replace 
+{txt}file PC_setyr_1995_2005.dta saved
+
+{com}. 
+. * Table 4 of the WP:
+.         sort effyr obsoletenum
+{txt}
+{com}.         table effyr if obsoletenum!=obsoletenum[_n-1], c(count obsoletenum)
+
+{txt}{hline 10}{c TT}{hline 12}
+    effyr {c |} N(obsole~m)
+{hline 10}{c +}{hline 12}
+     1996 {c |}         {res}118
+     {txt}1998 {c |}           {res}2
+     {txt}1999 {c |}          {res}68
+     {txt}2000 {c |}          {res}16
+     {txt}2001 {c |}         {res}113
+     {txt}2002 {c |}          {res}82
+     {txt}2003 {c |}         {res}366
+     {txt}2004 {c |}          {res}35
+     {txt}2005 {c |}         {res}303
+{txt}{hline 10}{c BT}{hline 12}
+
+{com}.         sort effyr newnum
+{txt}
+{com}.         table effyr if newnum!=newnum[_n-1], c(count newnum)
+
+{txt}{hline 10}{c TT}{hline 11}
+    effyr {c |}  N(newnum)
+{hline 10}{c +}{hline 11}
+     1996 {c |}         {res}80
+     {txt}1999 {c |}         {res}90
+     {txt}2000 {c |}         {res}12
+     {txt}2001 {c |}         {res}76
+     {txt}2002 {c |}         {res}54
+     {txt}2003 {c |}        {res}294
+     {txt}2004 {c |}         {res}24
+     {txt}2005 {c |}        {res}105
+{txt}{hline 10}{c BT}{hline 11}
+
+{com}.         sort effyr setyr
+{txt}
+{com}.         table effyr if setyr!=setyr[_n-1], c(count setyr)
+
+{txt}{hline 10}{c TT}{hline 11}
+    effyr {c |}   N(setyr)
+{hline 10}{c +}{hline 11}
+     1996 {c |}         {res}54
+     {txt}1998 {c |}          {res}1
+     {txt}1999 {c |}         {res}31
+     {txt}2000 {c |}          {res}9
+     {txt}2001 {c |}         {res}57
+     {txt}2002 {c |}         {res}30
+     {txt}2003 {c |}        {res}218
+     {txt}2004 {c |}         {res}17
+     {txt}2005 {c |}         {res}96
+{txt}{hline 10}{c BT}{hline 11}
+
+{com}.         table effyr, c(sum simple sum exit sum entry)
+
+{txt}{hline 10}{c TT}{hline 38}
+    effyr {c |} sum(simple)    sum(exit)   sum(entry)
+{hline 10}{c +}{hline 38}
+     1996 {c |}          {res}12           14           15
+     {txt}1998 {c |}           {res}0            2            0
+     {txt}1999 {c |}           {res}2            3           60
+     {txt}2000 {c |}           {res}1            0            0
+     {txt}2001 {c |}           {res}0            0            0
+     {txt}2002 {c |}           {res}3            0            3
+     {txt}2003 {c |}         {res}196            1           12
+     {txt}2004 {c |}           {res}1            1            2
+     {txt}2005 {c |}           {res}7           65            1
+{txt}{hline 10}{c BT}{hline 38}
+
+{com}.         
+. 
+. *********************************************************       
+. *** Step 3: Consistent panel over time (procedure PS) ***
+. *********************************************************       
+. * This procedure is almost identical to that of Schott and Pierce (2009)
+. * Loop 2 (news loop PS) 
+.                 
+.         *** Chains over time: identify them ***
+.         * Use the yearly concordance files to chain the obs-new matches across years.
+.         * the goal is to find news from subsequent years that modifies news from earlier years
+.         * the files generated below only contain chains, not changes that only affect single years
+.         * we still ignore entry and exit here (dropped from the data and kept in a separate file for now)
+. 
+.         
+.         foreach y of local pcyr {c -(}
+{txt}  2{com}.                 use temp_xchain_`y', clear
+{txt}  3{com}.                         keep if exit==1 | entry==1
+{txt}  4{com}.                         save temp_exit_entry_`y', replace
+{txt}  5{com}.                 use temp_xchain_`y', clear
+{txt}  6{com}.                         drop if exit==1 | entry==1
+{txt}  7{com}.                         drop exit entry one_many many_one many_many simple obsolete new
+{txt}  8{com}.                         rename obs`y' obs
+{txt}  9{com}.                         foreach x of local pcyr {c -(}
+{txt} 10{com}.                                 if `x'>`y' {c -(}
+{txt} 11{com}.                                         noisily display [`y'] " " [`x']
+{txt} 12{com}.                                         rename new`y' obs`x'
+{txt} 13{com}.                                         sort obs`x'
+{txt} 14{com}.                                         joinby obs`x' using temp_xchain_`x', unmatched(master)
+{txt} 15{com}.                                         noisily tab _merge
+{txt} 16{com}.                                         drop if _merge==2
+{txt} 17{com}.                                         rename _merge _m`y'`x'
+{txt} 18{com}.                                         rename obs`x' new`y'
+{txt} 19{com}.                                         {c )-}
+{txt} 20{com}.                         {c )-}
+{txt} 21{com}.                         
+.                         gen _mjunk=0
+{txt} 22{com}.                         egen idx = rowmax(_m*)
+{txt} 23{com}.                         noisily tab idx
+{txt} 24{com}.                         keep if idx==3
+{txt} 25{com}.                         sort obs
+{txt} 26{com}.                         drop _m*
+{txt} 27{com}.                 save temp2_xchain_`y', replace
+{txt} 28{com}.         {c )-}
+{txt}(116 observations deleted)
+(note: file temp_exit_entry_1996.dta not found)
+file temp_exit_entry_1996.dta saved
+(29 observations deleted)
+1996 1998
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}        116      100.00      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}        116      100.00
+{txt}(0 observations deleted)
+1996 1999
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}        108       91.53       91.53
+{txt}both in master and using data {c |}{res}         10        8.47      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}        118      100.00
+{txt}(0 observations deleted)
+1996 2000
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}        118      100.00      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}        118      100.00
+{txt}(0 observations deleted)
+1996 2001
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}        118      100.00      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}        118      100.00
+{txt}(0 observations deleted)
+1996 2002
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}        109       83.21       83.21
+{txt}both in master and using data {c |}{res}         22       16.79      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}        131      100.00
+{txt}(0 observations deleted)
+1996 2003
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}        126       96.18       96.18
+{txt}both in master and using data {c |}{res}          5        3.82      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}        131      100.00
+{txt}(0 observations deleted)
+1996 2004
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}        128       93.43       93.43
+{txt}both in master and using data {c |}{res}          9        6.57      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}        137      100.00
+{txt}(0 observations deleted)
+1996 2005
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}        137      100.00      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}        137      100.00
+{txt}(0 observations deleted)
+
+        idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}         91       66.42       66.42
+{txt}          3 {c |}{res}         46       33.58      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        137      100.00
+{txt}(91 observations deleted)
+(note: file temp2_xchain_1996.dta not found)
+file temp2_xchain_1996.dta saved
+(0 observations deleted)
+(note: file temp_exit_entry_1998.dta not found)
+file temp_exit_entry_1998.dta saved
+(2 observations deleted)
+1998 1999
+(joinby on obs1999 is empty)
+no observations
+(0 observations deleted)
+1998 2000
+(joinby on obs2000 is empty)
+no observations
+(0 observations deleted)
+1998 2001
+(joinby on obs2001 is empty)
+no observations
+(0 observations deleted)
+1998 2002
+(joinby on obs2002 is empty)
+no observations
+(0 observations deleted)
+1998 2003
+(joinby on obs2003 is empty)
+no observations
+(0 observations deleted)
+1998 2004
+(joinby on obs2004 is empty)
+no observations
+(0 observations deleted)
+1998 2005
+(joinby on obs2005 is empty)
+no observations
+(0 observations deleted)
+no observations
+(0 observations deleted)
+(note: dataset contains 0 observations)
+(note: file temp2_xchain_1998.dta not found)
+file temp2_xchain_1998.dta saved
+(66 observations deleted)
+(note: file temp_exit_entry_1999.dta not found)
+file temp_exit_entry_1999.dta saved
+(63 observations deleted)
+1999 2000
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}         66      100.00      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}         66      100.00
+{txt}(0 observations deleted)
+1999 2001
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}         66      100.00      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}         66      100.00
+{txt}(0 observations deleted)
+1999 2002
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}         63       95.45       95.45
+{txt}both in master and using data {c |}{res}          3        4.55      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}         66      100.00
+{txt}(0 observations deleted)
+1999 2003
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}         54       81.82       81.82
+{txt}both in master and using data {c |}{res}         12       18.18      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}         66      100.00
+{txt}(0 observations deleted)
+1999 2004
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}         66      100.00      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}         66      100.00
+{txt}(0 observations deleted)
+1999 2005
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}         64       96.97       96.97
+{txt}both in master and using data {c |}{res}          2        3.03      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}         66      100.00
+{txt}(0 observations deleted)
+
+        idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}         50       75.76       75.76
+{txt}          3 {c |}{res}         16       24.24      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}         66      100.00
+{txt}(50 observations deleted)
+(note: file temp2_xchain_1999.dta not found)
+file temp2_xchain_1999.dta saved
+(21 observations deleted)
+(note: dataset contains 0 observations)
+(note: file temp_exit_entry_2000.dta not found)
+file temp_exit_entry_2000.dta saved
+(0 observations deleted)
+2000 2001
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}         21      100.00      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}         21      100.00
+{txt}(0 observations deleted)
+2000 2002
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}         21      100.00      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}         21      100.00
+{txt}(0 observations deleted)
+2000 2003
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}         21      100.00      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}         21      100.00
+{txt}(0 observations deleted)
+2000 2004
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}         21      100.00      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}         21      100.00
+{txt}(0 observations deleted)
+2000 2005
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}         21      100.00      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}         21      100.00
+{txt}(0 observations deleted)
+
+        idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}         21      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}         21      100.00
+{txt}(21 observations deleted)
+(note: dataset contains 0 observations)
+(note: file temp2_xchain_2000.dta not found)
+file temp2_xchain_2000.dta saved
+(132 observations deleted)
+(note: dataset contains 0 observations)
+(note: file temp_exit_entry_2001.dta not found)
+file temp_exit_entry_2001.dta saved
+(0 observations deleted)
+2001 2002
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}        131       98.50       98.50
+{txt}both in master and using data {c |}{res}          2        1.50      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}        133      100.00
+{txt}(0 observations deleted)
+2001 2003
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}        133      100.00      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}        133      100.00
+{txt}(0 observations deleted)
+2001 2004
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}        131       98.50       98.50
+{txt}both in master and using data {c |}{res}          2        1.50      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}        133      100.00
+{txt}(0 observations deleted)
+2001 2005
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}         78       58.21       58.21
+{txt}both in master and using data {c |}{res}         56       41.79      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}        134      100.00
+{txt}(0 observations deleted)
+
+        idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}         74       55.22       55.22
+{txt}          3 {c |}{res}         60       44.78      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        134      100.00
+{txt}(74 observations deleted)
+(note: file temp2_xchain_2001.dta not found)
+file temp2_xchain_2001.dta saved
+(119 observations deleted)
+(note: file temp_exit_entry_2002.dta not found)
+file temp_exit_entry_2002.dta saved
+(3 observations deleted)
+2002 2003
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}        114       95.80       95.80
+{txt}both in master and using data {c |}{res}          5        4.20      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}        119      100.00
+{txt}(0 observations deleted)
+2002 2004
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}        116       95.08       95.08
+{txt}both in master and using data {c |}{res}          6        4.92      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}        122      100.00
+{txt}(0 observations deleted)
+2002 2005
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}        122      100.00      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}        122      100.00
+{txt}(0 observations deleted)
+
+        idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}        111       90.98       90.98
+{txt}          3 {c |}{res}         11        9.02      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        122      100.00
+{txt}(111 observations deleted)
+(note: file temp2_xchain_2002.dta not found)
+file temp2_xchain_2002.dta saved
+(530 observations deleted)
+(note: file temp_exit_entry_2003.dta not found)
+file temp_exit_entry_2003.dta saved
+(13 observations deleted)
+2003 2004
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}        507       93.89       93.89
+{txt}both in master and using data {c |}{res}         33        6.11      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}        540      100.00
+{txt}(0 observations deleted)
+2003 2005
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}        519       96.11       96.11
+{txt}both in master and using data {c |}{res}         21        3.89      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}        540      100.00
+{txt}(0 observations deleted)
+
+        idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}        486       90.00       90.00
+{txt}          3 {c |}{res}         54       10.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        540      100.00
+{txt}(486 observations deleted)
+(note: file temp2_xchain_2003.dta not found)
+file temp2_xchain_2003.dta saved
+(41 observations deleted)
+(note: file temp_exit_entry_2004.dta not found)
+file temp_exit_entry_2004.dta saved
+(3 observations deleted)
+2004 2005
+
+                       _merge {c |}      Freq.     Percent        Cum.
+{hline 30}{c +}{hline 35}
+          only in master data {c |}{res}         37       82.22       82.22
+{txt}both in master and using data {c |}{res}          8       17.78      100.00
+{txt}{hline 30}{c +}{hline 35}
+                        Total {c |}{res}         45      100.00
+{txt}(0 observations deleted)
+
+        idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}         37       82.22       82.22
+{txt}          3 {c |}{res}          8       17.78      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}         45      100.00
+{txt}(37 observations deleted)
+(note: file temp2_xchain_2004.dta not found)
+file temp2_xchain_2004.dta saved
+(247 observations deleted)
+(note: file temp_exit_entry_2005.dta not found)
+file temp_exit_entry_2005.dta saved
+(66 observations deleted)
+
+        idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}        247      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        247      100.00
+{txt}(247 observations deleted)
+(note: dataset contains 0 observations)
+(note: file temp2_xchain_2005.dta not found)
+file temp2_xchain_2005.dta saved
+
+{com}.         
+.         *** Assign single setyear to all members of a family ***
+.         * Put all the chained changes in one file and assign single setyr to all members of a family revealed by the chain.
+.         * challenge here is to set a single setyr for all families revealed by the chain.
+.         * Two cases for a family: growing or shrinking
+.                 
+.         * the iteration of min commands in the loop below takes care of both cases by searching for the setyr for
+.         * a family that covers all of its members.
+. 
+. if `b1'!=1997 {c -(}
+.         use temp2_xchain_`b1', clear
+.                 foreach y of local pcyr1 {c -(}
+{txt}  2{com}.                         append using temp2_xchain_`y'
+{txt}  3{com}.                 {c )-}
+{txt}new1998 was {res}byte{txt} now {res}long
+{com}.         {c )-}
+{txt}
+{com}. 
+. if `b1'==1997 {c -(}
+.         use temp2_xchain_1998, clear
+.                 foreach y of local pcyr1 {c -(}
+{txt}  2{com}.                         append using temp2_xchain_`y'
+{txt}  3{com}.                 {c )-}
+.         {c )-}
+{txt}
+{com}.         
+.         
+.         drop new
+{txt}
+{com}.         keep obs new* setyr* effyr*
+{txt}
+{com}.         
+.         capture duplicates drop
+{txt}
+{com}.         egen double setyr = rowmin(setyr*)
+{txt}
+{com}.         egen nchain = rownonmiss(new*)
+{txt}
+{com}.         
+.         rename obs obsoletenum
+{txt}
+{com}.         order obs setyr
+{txt}
+{com}.         sort obs
+{txt}
+{com}.         save temp2_xchain, replace
+{txt}(note: file temp2_xchain.dta not found)
+file temp2_xchain.dta saved
+
+{com}.                 /* This file groups all families that change over time */
+. 
+.         
+.         use temp2_xchain, clear
+{txt}
+{com}.                 drop setyr effyr*
+{txt}
+{com}.                 egen t1 = seq(), by(obs)
+{txt}
+{com}.                 reshape long new setyr, i(obs t1) j(effyr)
+{txt}(note: j = 1996 1998 1999 2000 2001 2002 2003 2004 2005)
+
+Data{col 36}wide{col 43}->{col 48}long
+{hline 77}
+Number of obs.                 {res}     195   {txt}->{res}    1755
+{txt}Number of variables            {res}      21   {txt}->{res}       6
+{txt}j variable (9 values)                     ->   {res}effyr
+{txt}xij variables:
+            {res}new1996 new1998 ... new2005   {txt}->   {res}new
+      setyr1996 setyr1998 ... setyr2005   {txt}->   {res}setyr
+{txt}{hline 77}
+
+{com}.                 drop if new==. & setyr==.
+{txt}(1364 observations deleted)
+
+{com}.                 drop t1 nchain
+{txt}
+{com}.                 duplicates drop obs effyr new setyr, force
+
+{p 0 4}{txt}Duplicates in terms of {res} obsoletenum effyr new setyr{p_end}
+
+{txt}(53 observations deleted)
+
+{com}.                 
+.                 rename new newnum
+{txt}
+{com}.         
+.         
+.         *** Add simple changes back in (no chains) ***
+.         * have to add these in before the min loop below in case a non-chain obs-pair is part of a family
+.                 sort obsoletenum newnum effyr
+{txt}
+{com}.                 merge obsoletenum newnum effyr using PC_setyr_`b'_`e'
+{txt}
+{com}.                 
+.                 drop if effyr < `b'| effyr > `e'
+{txt}(0 observations deleted)
+
+{com}.                 tab _merge
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}        169       10.46       10.46
+{txt}          2 {c |}{res}      1,277       79.07       89.54
+{txt}          3 {c |}{res}        169       10.46      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,615      100.00
+{txt}
+{com}.                 drop _merge
+{txt}
+{com}. 
+.         *** Family identifcation loop over time ***
+.         * Example:
+.         * 1999: three codes become two codes in 2000 and these two codes each map into two different 
+.         * codes in 2001, some of which might already have existed in 1999.
+.         * all these codes will be grouped together starting 1999 in this loop (they are assigned the minimum setyear).
+.         
+.         egen double t1 = min(setyr), by(obsoletenum)
+{txt}
+{com}.         rename setyr oldsetyr
+{txt}
+{com}.         local zzz = 2
+{txt}
+{com}.         local stop = 0
+{txt}
+{com}.         while `stop'==0 {c -(}
+{txt}  2{com}.                 noisily display [`zzz']
+{txt}  3{com}.                 local zlag = `zzz'-1
+{txt}  4{com}.                 if mod(`zzz',2)==0 {c -(}
+{txt}  5{com}.                         egen double t`zzz'= min(t`zlag'), by(newnum)
+{txt}  6{com}.                 {c )-}
+{txt}  7{com}.         
+.                 if mod(`zzz',2)~=0 {c -(}
+{txt}  8{com}.                         egen double t`zzz'= min(t`zlag'), by(obsoletenum)
+{txt}  9{com}.                 {c )-}
+{txt} 10{com}.         
+.                 compare t`zzz' t`zlag'
+{txt} 11{com}.                 gen idx = t`zzz'==t`zlag'
+{txt} 12{com}.                 tab idx
+{txt} 13{com}.                 local stop = r(r)==1
+{txt} 14{com}.                 local zzz = `zzz'+1
+{txt} 15{com}.                 display r(r) " " [`stop']
+{txt} 16{com}.                 drop idx
+{txt} 17{com}.                 {c )-}
+2
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+t2<t1                   {res}      259     -164.0004    -9.297701      -.0002
+{txt}t2=t1                   {res}     1356
+{txt}{col 24}{hline 10}
+jointly defined         {res}     1615     -164.0004    -1.491086           0
+{txt}{col 24}{hline 10}
+total                   {res}     1615
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}        259       16.04       16.04
+{txt}          1 {c |}{res}      1,356       83.96      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,615      100.00
+2 0
+3
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+t3<t2                   {res}       83      -53.9996    -3.614566      -.0002
+{txt}t3=t2                   {res}     1532
+{txt}{col 24}{hline 10}
+jointly defined         {res}     1615      -53.9996    -.1857641           0
+{txt}{col 24}{hline 10}
+total                   {res}     1615
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}         83        5.14        5.14
+{txt}          1 {c |}{res}      1,532       94.86      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,615      100.00
+2 0
+4
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+t4<t3                   {res}       98       -6.9999    -5.530544      -.0002
+{txt}t4=t3                   {res}     1517
+{txt}{col 24}{hline 10}
+jointly defined         {res}     1615       -6.9999    -.3355996           0
+{txt}{col 24}{hline 10}
+total                   {res}     1615
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}         98        6.07        6.07
+{txt}          1 {c |}{res}      1,517       93.93      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,615      100.00
+2 0
+5
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+t5<t4                   {res}       64       -6.9999    -4.703041      -.0009
+{txt}t5=t4                   {res}     1551
+{txt}{col 24}{hline 10}
+jointly defined         {res}     1615       -6.9999    -.1863744           0
+{txt}{col 24}{hline 10}
+total                   {res}     1615
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}         64        3.96        3.96
+{txt}          1 {c |}{res}      1,551       96.04      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,615      100.00
+2 0
+6
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+t6<t5                   {res}       80       -6.9999      -2.4999     -1.9999
+{txt}t6=t5                   {res}     1535
+{txt}{col 24}{hline 10}
+jointly defined         {res}     1615       -6.9999    -.1238341           0
+{txt}{col 24}{hline 10}
+total                   {res}     1615
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}         80        4.95        4.95
+{txt}          1 {c |}{res}      1,535       95.05      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,615      100.00
+2 0
+7
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+t7<t6                   {res}       36       -6.9999    -2.138789     -1.9999
+{txt}t7=t6                   {res}     1579
+{txt}{col 24}{hline 10}
+jointly defined         {res}     1615       -6.9999    -.0476758           0
+{txt}{col 24}{hline 10}
+total                   {res}     1615
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}         36        2.23        2.23
+{txt}          1 {c |}{res}      1,579       97.77      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,615      100.00
+2 0
+8
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+t8<t7                   {res}       12       -6.9999    -3.666567     -1.9999
+{txt}t8=t7                   {res}     1603
+{txt}{col 24}{hline 10}
+jointly defined         {res}     1615       -6.9999    -.0272438           0
+{txt}{col 24}{hline 10}
+total                   {res}     1615
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}         12        0.74        0.74
+{txt}          1 {c |}{res}      1,603       99.26      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,615      100.00
+2 0
+9
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+t9<t8                   {res}        7       -6.9999    -6.285614     -1.9999
+{txt}t9=t8                   {res}     1608
+{txt}{col 24}{hline 10}
+jointly defined         {res}     1615       -6.9999    -.0272441           0
+{txt}{col 24}{hline 10}
+total                   {res}     1615
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}          7        0.43        0.43
+{txt}          1 {c |}{res}      1,608       99.57      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,615      100.00
+2 0
+10
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+t10<t9                  {res}        4       -1.9999      -1.9999     -1.9999
+{txt}t10=t9                  {res}     1611
+{txt}{col 24}{hline 10}
+jointly defined         {res}     1615       -1.9999    -.0049533           0
+{txt}{col 24}{hline 10}
+total                   {res}     1615
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}          4        0.25        0.25
+{txt}          1 {c |}{res}      1,611       99.75      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,615      100.00
+2 0
+11
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+t11<t10                 {res}        6       -1.9999      -1.9999     -1.9999
+{txt}t11=t10                 {res}     1609
+{txt}{col 24}{hline 10}
+jointly defined         {res}     1615       -1.9999      -.00743           0
+{txt}{col 24}{hline 10}
+total                   {res}     1615
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}          6        0.37        0.37
+{txt}          1 {c |}{res}      1,609       99.63      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,615      100.00
+2 0
+12
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+t12=t11                 {res}     1615
+{txt}{col 24}{hline 10}
+jointly defined         {res}     1615             0            0           0
+{txt}{col 24}{hline 10}
+total                   {res}     1615
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      1,615      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,615      100.00
+1 1
+{txt}
+{com}.         
+.         
+.         
+.         local yyy = `zzz'-1
+{txt}
+{com}.         gen double setyr = t`yyy'
+{txt}
+{com}.         keep obsoletenum effyr newnum setyr
+{txt}
+{com}.         duplicates drop
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+
+{com}.         sort obsoletenum newnum effyr
+{txt}
+{com}.         
+.         
+. 
+. save  output_file_PC_`b'_`e'_setyr, replace
+{txt}(note: file output_file_PC_1995_2005_setyr.dta not found)
+file output_file_PC_1995_2005_setyr.dta saved
+
+{com}. 
+. 
+. 
+. *********************************************************       
+. *** Step 4: Consistent panel over time (procedure PS) ***
+. *********************************************************       
+. *** Generate concordance file with ALL PC codes between `b' and `e' ***
+.         * including codes that have not changed
+.         * procedure draws again on Pierce and Schott (2012) but with some adaptations
+.         * While they develop a concordance specific to the codes featuring in the data, 
+.                 * we take all potential (mandatory) PC8 codes into account
+.         * We develop a concordance for all existing PC8 codes (generic for all countries + necessary to match trade and production)
+. 
+. 
+.         * generate files with PC codes in each particular year
+.                 * based on PC list, Eurostat Ramon
+.                 * however: we only keep "mandatory disaggregated" codes, i.e. no B-list, N-list, Q-list, T-list and Z-list codes
+.                 * B-list and N-list codes can feature in the prodcom data, they will be recoded into their mandatory counterparts 
+.                         * prior to concording
+.                 
+.         foreach x of numlist `b'/`e'{c -(}
+{txt}  2{com}.         
+.                 use PC_`x', clear
+{txt}  3{com}.                 
+.                 * merge with file with optional codes (some optional codes become mandatory in later years)
+.                                 * but we need to keep the more aggregated (previous mandatory) code in all years
+.                                 
+.                                 rename pc pc8
+{txt}  4{com}.                                 sort pc8
+{txt}  5{com}.                                 count
+{txt}  6{com}.                                 merge pc8 using optional_codes_`b'_`e'_sample
+{txt}  7{com}.                                 tab _m
+{txt}  8{com}.                                 replace pc8=pc_mand if _m==3
+{txt}  9{com}.                                 drop if _m==2
+{txt} 10{com}.                                 drop _m pc_mand
+{txt} 11{com}.                                 rename pc8 pc
+{txt} 12{com}.                                 duplicates drop
+{txt} 13{com}.                 
+.                 * All codes should be numeric (T, Z, E and Q headings do not feature in the file with "regular" codes)
+.                         count
+{txt} 14{com}.                         destring pc, gen(pcnum)
+{txt} 15{com}.                         count if pc!="" & pcnum==.
+{txt} 16{com}.                         keep pcnum pc
+{txt} 17{com}.                         duplicates drop
+{txt} 18{com}.                         count
+{txt} 19{com}.                         save PC2_`x', replace
+{txt} 20{com}.                 {c )-}
+{res} 4840
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,840       83.08       83.08
+{txt}          2 {c |}{res}        986       16.92      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      5,826      100.00
+{txt}(0 real changes made)
+(986 observations deleted)
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res} 4840
+{txt}pc has all characters numeric; pcnum {res}generated {txt}as {res}long
+    0
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res} 4840
+{txt}(note: file PC2_1995.dta not found)
+file PC2_1995.dta saved
+{res} 4807
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,801       82.96       82.96
+{txt}          2 {c |}{res}        980       16.93       99.90
+{txt}          3 {c |}{res}          6        0.10      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      5,787      100.00
+{txt}(6 real changes made)
+(980 observations deleted)
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(4 observations deleted)
+{res} 4803
+{txt}pc has all characters numeric; pcnum {res}generated {txt}as {res}long
+    0
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res} 4803
+{txt}(note: file PC2_1996.dta not found)
+file PC2_1996.dta saved
+{res} 4807
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,801       82.96       82.96
+{txt}          2 {c |}{res}        980       16.93       99.90
+{txt}          3 {c |}{res}          6        0.10      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      5,787      100.00
+{txt}(6 real changes made)
+(980 observations deleted)
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(4 observations deleted)
+{res} 4803
+{txt}pc has all characters numeric; pcnum {res}generated {txt}as {res}long
+    0
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res} 4803
+{txt}(note: file PC2_1997.dta not found)
+file PC2_1997.dta saved
+{res} 4809
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,799       82.96       82.96
+{txt}          2 {c |}{res}        976       16.87       99.83
+{txt}          3 {c |}{res}         10        0.17      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      5,785      100.00
+{txt}(10 real changes made)
+(976 observations deleted)
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(6 observations deleted)
+{res} 4803
+{txt}pc has all characters numeric; pcnum {res}generated {txt}as {res}long
+    0
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res} 4803
+{txt}(note: file PC2_1998.dta not found)
+file PC2_1998.dta saved
+{res} 4839
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,822       83.02       83.02
+{txt}          2 {c |}{res}        969       16.68       99.71
+{txt}          3 {c |}{res}         17        0.29      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      5,808      100.00
+{txt}(17 real changes made)
+(969 observations deleted)
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res} 4839
+{txt}pc has all characters numeric; pcnum {res}generated {txt}as {res}long
+    0
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(10 observations deleted)
+{res} 4829
+{txt}(note: file PC2_1999.dta not found)
+file PC2_1999.dta saved
+{res} 4832
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,819       83.01       83.01
+{txt}          2 {c |}{res}        973       16.76       99.78
+{txt}          3 {c |}{res}         13        0.22      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      5,805      100.00
+{txt}(13 real changes made)
+(973 observations deleted)
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(7 observations deleted)
+{res} 4825
+{txt}pc has all characters numeric; pcnum {res}generated {txt}as {res}long
+    0
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res} 4825
+{txt}(note: file PC2_2000.dta not found)
+file PC2_2000.dta saved
+{res} 4793
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,781       82.90       82.90
+{txt}          2 {c |}{res}        974       16.89       99.79
+{txt}          3 {c |}{res}         12        0.21      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      5,767      100.00
+{txt}(12 real changes made)
+(974 observations deleted)
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(6 observations deleted)
+{res} 4787
+{txt}pc has all characters numeric; pcnum {res}generated {txt}as {res}long
+    0
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res} 4787
+{txt}(note: file PC2_2001.dta not found)
+file PC2_2001.dta saved
+{res} 4764
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,752       82.82       82.82
+{txt}          2 {c |}{res}        974       16.97       99.79
+{txt}          3 {c |}{res}         12        0.21      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      5,738      100.00
+{txt}(12 real changes made)
+(974 observations deleted)
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(6 observations deleted)
+{res} 4758
+{txt}pc has all characters numeric; pcnum {res}generated {txt}as {res}long
+    0
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res} 4758
+{txt}(note: file PC2_2002.dta not found)
+file PC2_2002.dta saved
+{res} 4693
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,681       82.60       82.60
+{txt}          2 {c |}{res}        974       17.19       99.79
+{txt}          3 {c |}{res}         12        0.21      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      5,667      100.00
+{txt}(12 real changes made)
+(974 observations deleted)
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(6 observations deleted)
+{res} 4687
+{txt}pc has all characters numeric; pcnum {res}generated {txt}as {res}long
+    0
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res} 4687
+{txt}(note: file PC2_2003.dta not found)
+file PC2_2003.dta saved
+{res} 4683
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,671       82.57       82.57
+{txt}          2 {c |}{res}        974       17.22       99.79
+{txt}          3 {c |}{res}         12        0.21      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      5,657      100.00
+{txt}(12 real changes made)
+(974 observations deleted)
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(6 observations deleted)
+{res} 4677
+{txt}pc has all characters numeric; pcnum {res}generated {txt}as {res}long
+    0
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res} 4677
+{txt}(note: file PC2_2004.dta not found)
+file PC2_2004.dta saved
+{res} 4489
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,473       81.94       81.94
+{txt}          2 {c |}{res}        970       17.77       99.71
+{txt}          3 {c |}{res}         16        0.29      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      5,459      100.00
+{txt}(16 real changes made)
+(970 observations deleted)
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(9 observations deleted)
+{res} 4480
+{txt}pc has all characters numeric; pcnum {res}generated {txt}as {res}long
+    0
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res} 4480
+{txt}(note: file PC2_2005.dta not found)
+file PC2_2005.dta saved
+
+{com}.                 
+.                 
+.         foreach y of numlist `b' / `e' {c -(}
+{txt}  2{com}. 
+.                 local ylead = `y'+1
+{txt}  3{com}.                 noisily display " "
+{txt}  4{com}.                 noisily display " "
+{txt}  5{com}.                 noisily display "NEW LOOP " [`y']
+{txt}  6{com}.                 noisily display " "
+{txt}  7{com}.                 noisily display " "
+{txt}  8{com}. 
+.         * Step 1
+.         * get obsolete-new files ready
+.         * temp_obsolete is used to assign setyrs to codes that are last used in year y
+.         * To insure against the code ever becomming obsolete, 
+.         * i.e., it being an obsolete code in any year after the year of the loop
+. 
+.         use output_file_PC_`b'_`e'_setyr, clear
+{txt}  9{com}.                 keep if effyr>=`ylead'
+{txt} 10{com}.                 keep obsoletenum setyr
+{txt} 11{com}.                 drop if obsoletenum==.
+{txt} 12{com}.                 capture duplicates drop
+{txt} 13{com}.                 sort obsoletenum
+{txt} 14{com}.         save temp_obsolete_`y', replace emptyok
+{txt} 15{com}. 
+.         * Step 2
+.         * temp_new is used to assign setyrs to codes that are new in year y
+.         * bascially want to insure against this code ever having been a new code prior to this
+.         * year; if so, need to assign it a setyr
+.         
+.         use output_file_PC_`b'_`e'_setyr, clear
+{txt} 16{com}.                 keep if effyr<=`ylead'
+{txt} 17{com}.                 keep newnum setyr
+{txt} 18{com}.                 drop if newnum==.
+{txt} 19{com}.                 capture duplicates drop
+{txt} 20{com}.                 sort newnum
+{txt} 21{com}.         save temp_new_`y', replace emptyok
+{txt} 22{com}. 
+.         * Step 3
+.         * read in data and collapse to appropriate level
+.         
+.         use PC2_`y', clear
+{txt} 23{com}.         
+.         format pcnum %15.0f
+{txt} 24{com}. 
+.         * merge in obsolete-code family identifiers
+.                 rename pcnum obsoletenum
+{txt} 25{com}.                 sort obsoletenum
+{txt} 26{com}.                 merge obsoletenum using temp_obsolete_`y', keep(setyr)
+{txt} 27{com}.                 noisily tab _merge
+{txt} 28{com}.                 drop if _merge==2
+{txt} 29{com}.                 drop _merge
+{txt} 30{com}.                 rename obsoletenum pcnum
+{txt} 31{com}. 
+.         * merge in new-code family identifiers
+.                 rename pcnum newnum
+{txt} 32{com}.                 sort newnum
+{txt} 33{com}.                 merge newnum using temp_new_`y', keep(setyr) update
+{txt} 34{com}.                 noisily tab _merge
+{txt} 35{com}.                 drop if _merge==2
+{txt} 36{com}.                 drop _merge
+{txt} 37{com}.                 rename newnum pcnum
+{txt} 38{com}. 
+.         save prodcom_PC_`y'_concorded, replace
+{txt} 39{com}. 
+.         {c )-}
+ 
+ 
+NEW LOOP 1995
+ 
+ 
+{txt}(0 observations deleted)
+(93 observations deleted)
+(note: file temp_obsolete_1995.dta not found)
+file temp_obsolete_1995.dta saved
+(1470 observations deleted)
+(14 observations deleted)
+(note: file temp_new_1995.dta not found)
+file temp_new_1995.dta saved
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      3,886       78.09       78.09
+{txt}          2 {c |}{res}        136        2.73       80.83
+{txt}          3 {c |}{res}        954       19.17      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,976      100.00
+{txt}(136 observations deleted)
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,813       98.37       98.37
+{txt}          2 {c |}{res}         53        1.08       99.45
+{txt}          3 {c |}{res}         26        0.53       99.98
+{txt}          4 {c |}{res}          1        0.02      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,893      100.00
+{txt}(53 observations deleted)
+(note: file prodcom_PC_1995_concorded.dta not found)
+file prodcom_PC_1995_concorded.dta saved
+ 
+ 
+NEW LOOP 1996
+ 
+ 
+(145 observations deleted)
+(78 observations deleted)
+(note: file temp_obsolete_1996.dta not found)
+file temp_obsolete_1996.dta saved
+(1470 observations deleted)
+(14 observations deleted)
+(note: file temp_new_1996.dta not found)
+file temp_new_1996.dta saved
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      3,951       79.87       79.87
+{txt}          2 {c |}{res}        144        2.91       82.78
+{txt}          3 {c |}{res}        852       17.22      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,947      100.00
+{txt}(144 observations deleted)
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,723       98.33       98.33
+{txt}          3 {c |}{res}         13        0.27       98.61
+{txt}          4 {c |}{res}         65        1.35       99.96
+{txt}          5 {c |}{res}          2        0.04      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,803      100.00
+{txt}(0 observations deleted)
+(note: file prodcom_PC_1996_concorded.dta not found)
+file prodcom_PC_1996_concorded.dta saved
+ 
+ 
+NEW LOOP 1997
+ 
+ 
+(145 observations deleted)
+(78 observations deleted)
+(note: file temp_obsolete_1997.dta not found)
+file temp_obsolete_1997.dta saved
+(1468 observations deleted)
+(16 observations deleted)
+(note: file temp_new_1997.dta not found)
+file temp_new_1997.dta saved
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      3,951       79.87       79.87
+{txt}          2 {c |}{res}        144        2.91       82.78
+{txt}          3 {c |}{res}        852       17.22      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,947      100.00
+{txt}(144 observations deleted)
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,723       98.33       98.33
+{txt}          3 {c |}{res}         13        0.27       98.61
+{txt}          4 {c |}{res}         65        1.35       99.96
+{txt}          5 {c |}{res}          2        0.04      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,803      100.00
+{txt}(0 observations deleted)
+(note: file prodcom_PC_1997_concorded.dta not found)
+file prodcom_PC_1997_concorded.dta saved
+ 
+ 
+NEW LOOP 1998
+ 
+ 
+(147 observations deleted)
+(78 observations deleted)
+(note: file temp_obsolete_1998.dta not found)
+file temp_obsolete_1998.dta saved
+(1333 observations deleted)
+(19 observations deleted)
+(note: file temp_new_1998.dta not found)
+file temp_new_1998.dta saved
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      3,952       79.89       79.89
+{txt}          2 {c |}{res}        144        2.91       82.80
+{txt}          3 {c |}{res}        851       17.20      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,947      100.00
+{txt}(144 observations deleted)
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,722       96.52       96.52
+{txt}          2 {c |}{res}         89        1.82       98.34
+{txt}          3 {c |}{res}         14        0.29       98.63
+{txt}          4 {c |}{res}         65        1.33       99.96
+{txt}          5 {c |}{res}          2        0.04      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,892      100.00
+{txt}(89 observations deleted)
+(note: file prodcom_PC_1998_concorded.dta not found)
+file prodcom_PC_1998_concorded.dta saved
+ 
+ 
+NEW LOOP 1999
+ 
+ 
+(282 observations deleted)
+(18 observations deleted)
+(note: file temp_obsolete_1999.dta not found)
+file temp_obsolete_1999.dta saved
+(1314 observations deleted)
+(19 observations deleted)
+(note: file temp_new_1999.dta not found)
+file temp_new_1999.dta saved
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      3,980       80.94       80.94
+{txt}          2 {c |}{res}         88        1.79       82.73
+{txt}          3 {c |}{res}        849       17.27      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,917      100.00
+{txt}(88 observations deleted)
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,661       96.24       96.24
+{txt}          2 {c |}{res}         14        0.29       96.53
+{txt}          3 {c |}{res}         76        1.57       98.10
+{txt}          4 {c |}{res}         90        1.86       99.96
+{txt}          5 {c |}{res}          2        0.04      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,843      100.00
+{txt}(14 observations deleted)
+(note: file prodcom_PC_1999_concorded.dta not found)
+file prodcom_PC_1999_concorded.dta saved
+ 
+ 
+NEW LOOP 2000
+ 
+ 
+(301 observations deleted)
+(18 observations deleted)
+(note: file temp_obsolete_2000.dta not found)
+file temp_obsolete_2000.dta saved
+(1182 observations deleted)
+(19 observations deleted)
+(note: file temp_new_2000.dta not found)
+file temp_new_2000.dta saved
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      3,992       81.25       81.25
+{txt}          2 {c |}{res}         88        1.79       83.04
+{txt}          3 {c |}{res}        833       16.96      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,913      100.00
+{txt}(88 observations deleted)
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,645       94.74       94.74
+{txt}          2 {c |}{res}         78        1.59       96.33
+{txt}          3 {c |}{res}         77        1.57       97.90
+{txt}          4 {c |}{res}        101        2.06       99.96
+{txt}          5 {c |}{res}          2        0.04      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,903      100.00
+{txt}(78 observations deleted)
+(note: file prodcom_PC_2000_concorded.dta not found)
+file prodcom_PC_2000_concorded.dta saved
+ 
+ 
+NEW LOOP 2001
+ 
+ 
+(433 observations deleted)
+(18 observations deleted)
+(note: file temp_obsolete_2001.dta not found)
+file temp_obsolete_2001.dta saved
+(1047 observations deleted)
+(19 observations deleted)
+(note: file temp_new_2001.dta not found)
+file temp_new_2001.dta saved
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,034       82.39       82.39
+{txt}          2 {c |}{res}        109        2.23       84.62
+{txt}          3 {c |}{res}        753       15.38      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,896      100.00
+{txt}(109 observations deleted)
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,534       93.58       93.58
+{txt}          2 {c |}{res}         58        1.20       94.78
+{txt}          3 {c |}{res}        108        2.23       97.01
+{txt}          4 {c |}{res}        143        2.95       99.96
+{txt}          5 {c |}{res}          2        0.04      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,845      100.00
+{txt}(58 observations deleted)
+(note: file prodcom_PC_2001_concorded.dta not found)
+file prodcom_PC_2001_concorded.dta saved
+ 
+ 
+NEW LOOP 2002
+ 
+ 
+(568 observations deleted)
+(15 observations deleted)
+(note: file temp_obsolete_2002.dta not found)
+file temp_obsolete_2002.dta saved
+(484 observations deleted)
+(20 observations deleted)
+(note: file temp_new_2002.dta not found)
+file temp_new_2002.dta saved
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,082       83.91       83.91
+{txt}          2 {c |}{res}        107        2.20       86.10
+{txt}          3 {c |}{res}        676       13.90      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,865      100.00
+{txt}(107 observations deleted)
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,459       88.05       88.05
+{txt}          2 {c |}{res}        306        6.04       94.10
+{txt}          3 {c |}{res}        105        2.07       96.17
+{txt}          4 {c |}{res}        191        3.77       99.94
+{txt}          5 {c |}{res}          3        0.06      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      5,064      100.00
+{txt}(306 observations deleted)
+(note: file prodcom_PC_2002_concorded.dta not found)
+file prodcom_PC_2002_concorded.dta saved
+ 
+ 
+NEW LOOP 2003
+ 
+ 
+(1131 observations deleted)
+(3 observations deleted)
+(note: file temp_obsolete_2003.dta not found)
+file temp_obsolete_2003.dta saved
+(399 observations deleted)
+(21 observations deleted)
+(note: file temp_new_2003.dta not found)
+file temp_new_2003.dta saved
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,352       90.89       90.89
+{txt}          2 {c |}{res}        101        2.11       93.00
+{txt}          3 {c |}{res}        335        7.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,788      100.00
+{txt}(101 observations deleted)
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,118       86.75       86.75
+{txt}          2 {c |}{res}         60        1.26       88.01
+{txt}          3 {c |}{res}        109        2.30       90.31
+{txt}          4 {c |}{res}        460        9.69      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,747      100.00
+{txt}(60 observations deleted)
+(note: file prodcom_PC_2003_concorded.dta not found)
+file prodcom_PC_2003_concorded.dta saved
+ 
+ 
+NEW LOOP 2004
+ 
+ 
+(1216 observations deleted)
+(1 observation deleted)
+(note: file temp_obsolete_2004.dta not found)
+file temp_obsolete_2004.dta saved
+(0 observations deleted)
+(99 observations deleted)
+(note: file temp_new_2004.dta not found)
+file temp_new_2004.dta saved
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,374       91.99       91.99
+{txt}          2 {c |}{res}         78        1.64       93.63
+{txt}          3 {c |}{res}        303        6.37      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,755      100.00
+{txt}(78 observations deleted)
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,092       84.86       84.86
+{txt}          2 {c |}{res}        145        3.01       87.87
+{txt}          3 {c |}{res}        103        2.14       90.00
+{txt}          4 {c |}{res}        482       10.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,822      100.00
+{txt}(145 observations deleted)
+(note: file prodcom_PC_2004_concorded.dta not found)
+file prodcom_PC_2004_concorded.dta saved
+ 
+ 
+NEW LOOP 2005
+ 
+ 
+(1615 observations deleted)
+(0 observations deleted)
+(note: dataset contains 0 observations)
+(note: file temp_obsolete_2005.dta not found)
+file temp_obsolete_2005.dta saved
+(0 observations deleted)
+(99 observations deleted)
+(note: file temp_new_2005.dta not found)
+file temp_new_2005.dta saved
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      4,480      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,480      100.00
+{txt}(0 observations deleted)
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      3,892       84.21       84.21
+{txt}          2 {c |}{res}        142        3.07       87.28
+{txt}          4 {c |}{res}        588       12.72      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,622      100.00
+{txt}(142 observations deleted)
+(note: file prodcom_PC_2005_concorded.dta not found)
+file prodcom_PC_2005_concorded.dta saved
+
+{com}. 
+.         * Step 4: Create panel file
+.         foreach y of numlist `b' / `e' {c -(}
+{txt}  2{com}.                 use prodcom_PC_`y'_concorded, replace
+{txt}  3{com}.                 rename pcnum group`y'
+{txt}  4{com}.                 drop if setyr==.
+{txt}  5{com}.                 sort setyr group`y'
+{txt}  6{com}.                 save junk_x_`y', replace
+{txt}  7{com}.                 {c )-}
+{txt}(3885 observations deleted)
+(note: file junk_x_1995.dta not found)
+file junk_x_1995.dta saved
+(3886 observations deleted)
+(note: file junk_x_1996.dta not found)
+file junk_x_1996.dta saved
+(3886 observations deleted)
+(note: file junk_x_1997.dta not found)
+file junk_x_1997.dta saved
+(3887 observations deleted)
+(note: file junk_x_1998.dta not found)
+file junk_x_1998.dta saved
+(3890 observations deleted)
+(note: file junk_x_1999.dta not found)
+file junk_x_1999.dta saved
+(3891 observations deleted)
+(note: file junk_x_2000.dta not found)
+file junk_x_2000.dta saved
+(3891 observations deleted)
+(note: file junk_x_2001.dta not found)
+file junk_x_2001.dta saved
+(3891 observations deleted)
+(note: file junk_x_2002.dta not found)
+file junk_x_2002.dta saved
+(3892 observations deleted)
+(note: file junk_x_2003.dta not found)
+file junk_x_2003.dta saved
+(3892 observations deleted)
+(note: file junk_x_2004.dta not found)
+file junk_x_2004.dta saved
+(3892 observations deleted)
+(note: file junk_x_2005.dta not found)
+file junk_x_2005.dta saved
+
+{com}. 
+.         use junk_x_`b', replace
+{txt}
+{com}.         foreach y of numlist `b' / `e' {c -(}
+{txt}  2{com}.                 display [`y']
+{txt}  3{com}.                 merge setyr using junk_x_`y'
+{txt}  4{com}.                 tab _merge
+{txt}  5{com}.                 drop _merge
+{txt}  6{com}.                 order setyr
+{txt}  7{com}.                 sort setyr group`y'
+{txt}  8{com}.                 {c )-}
+1995
+{txt}{p 0 4}
+variable{txt} setyr
+does not uniquely identify observations in
+the master data
+{p_end}
+{p 0 4}
+variable{txt} setyr
+does not uniquely identify observations in
+junk_x_1995.dta
+{p_end}
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          3 {c |}{res}        955      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        955      100.00
+1996
+{txt}{p 0 4}
+variable{txt} setyr
+does not uniquely identify observations in
+the master data
+{p_end}
+{p 0 4}
+variable{txt} setyr
+does not uniquely identify observations in
+junk_x_1996.dta
+{p_end}
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          2 {c |}{res}          2        0.21        0.21
+{txt}          3 {c |}{res}        959       99.79      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        961      100.00
+1997
+{txt}{p 0 4}
+variable{txt} setyr
+does not uniquely identify observations in
+the master data
+{p_end}
+{p 0 4}
+variable{txt} setyr
+does not uniquely identify observations in
+junk_x_1997.dta
+{p_end}
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          3 {c |}{res}        961      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        961      100.00
+1998
+{txt}{p 0 4}
+variable{txt} setyr
+does not uniquely identify observations in
+the master data
+{p_end}
+{p 0 4}
+variable{txt} setyr
+does not uniquely identify observations in
+junk_x_1998.dta
+{p_end}
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          3 {c |}{res}        961      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        961      100.00
+1999
+{txt}{p 0 4}
+variable{txt} setyr
+does not uniquely identify observations in
+the master data
+{p_end}
+{p 0 4}
+variable{txt} setyr
+does not uniquely identify observations in
+junk_x_1999.dta
+{p_end}
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          3 {c |}{res}      1,015      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,015      100.00
+2000
+{txt}{p 0 4}
+variable{txt} setyr
+does not uniquely identify observations in
+the master data
+{p_end}
+{p 0 4}
+variable{txt} setyr
+does not uniquely identify observations in
+junk_x_2000.dta
+{p_end}
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          3 {c |}{res}      1,016      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,016      100.00
+2001
+{txt}{p 0 4}
+variable{txt} setyr
+does not uniquely identify observations in
+the master data
+{p_end}
+{p 0 4}
+variable{txt} setyr
+does not uniquely identify observations in
+junk_x_2001.dta
+{p_end}
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          3 {c |}{res}      1,030      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,030      100.00
+2002
+{txt}{p 0 4}
+variable{txt} setyr
+does not uniquely identify observations in
+the master data
+{p_end}
+{p 0 4}
+variable{txt} setyr
+does not uniquely identify observations in
+junk_x_2002.dta
+{p_end}
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          2 {c |}{res}          1        0.10        0.10
+{txt}          3 {c |}{res}      1,032       99.90      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,033      100.00
+2003
+{txt}{p 0 4}
+variable{txt} setyr
+does not uniquely identify observations in
+the master data
+{p_end}
+{p 0 4}
+variable{txt} setyr
+does not uniquely identify observations in
+junk_x_2003.dta
+{p_end}
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          3 {c |}{res}      1,054      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,054      100.00
+2004
+{txt}{p 0 4}
+variable{txt} setyr
+does not uniquely identify observations in
+the master data
+{p_end}
+{p 0 4}
+variable{txt} setyr
+does not uniquely identify observations in
+junk_x_2004.dta
+{p_end}
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          3 {c |}{res}      1,057      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,057      100.00
+2005
+{txt}{p 0 4}
+variable{txt} setyr
+does not uniquely identify observations in
+the master data
+{p_end}
+{p 0 4}
+variable{txt} setyr
+does not uniquely identify observations in
+junk_x_2005.dta
+{p_end}
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          3 {c |}{res}      1,064      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,064      100.00
+{txt}
+{com}. 
+. 
+.         foreach y of numlist `b' / `e' {c -(}
+{txt}  2{com}.                 egen i`y'= tag(setyr group`y')
+{txt}  3{com}.                 replace group`y'=. if i`y'==0
+{txt}  4{com}.                 drop i`y'
+{txt}  5{com}.                 {c )-}
+{txt}(106 real changes made, 106 to missing)
+(146 real changes made, 146 to missing)
+(146 real changes made, 146 to missing)
+(147 real changes made, 147 to missing)
+(124 real changes made, 124 to missing)
+(129 real changes made, 129 to missing)
+(167 real changes made, 167 to missing)
+(197 real changes made, 197 to missing)
+(269 real changes made, 269 to missing)
+(279 real changes made, 279 to missing)
+(476 real changes made, 476 to missing)
+
+{com}. 
+.         save setyr_PC_`b'_`e', replace
+{txt}(note: file setyr_PC_1995_2005.dta not found)
+file setyr_PC_1995_2005.dta saved
+
+{com}.         
+.         
+. 
+. ******************************************************  
+. *** Step 5: Adjustments for changes in coverage PC ***
+. ******************************************************
+. * Coverage of PC list has changed over time
+. * Codes that enter or exit from the list: temp_exit_entry_`y'
+. 
+. * generate one file with all exiting and entering codes 
+. * since they are not covered in all years
+. * taking into account that some entry/exit codes may be part of group of PC8 codes
+. 
+.         foreach y of local pcyr {c -(}
+{txt}  2{com}.                 use temp_exit_entry_`y'
+{txt}  3{com}.                         drop group
+{txt}  4{com}.                         rename new`y' group
+{txt}  5{com}.                         replace group=. if entry!=1
+{txt}  6{com}.                         replace group = obs`y' if exit==1
+{txt}  7{com}.                         keep group
+{txt}  8{com}.                         gen exit=1
+{txt}  9{com}.                         format group %15.0f
+{txt} 10{com}.                         format exit %15.0f
+{txt} 11{com}.                         rename group group`y'
+{txt} 12{com}.                         sort group`y'
+{txt} 13{com}.                 save temp_exit_`y', replace
+{txt} 14{com}.                 {c )-}
+{txt}(0 real changes made)
+(14 real changes made)
+(note: file temp_exit_1996.dta not found)
+file temp_exit_1996.dta saved
+(0 real changes made)
+group was {res}byte{txt} now {res}long
+{txt}(2 real changes made)
+(note: file temp_exit_1998.dta not found)
+file temp_exit_1998.dta saved
+(0 real changes made)
+(3 real changes made)
+(note: file temp_exit_1999.dta not found)
+file temp_exit_1999.dta saved
+(0 real changes made)
+(0 real changes made)
+(note: dataset contains 0 observations)
+(note: file temp_exit_2000.dta not found)
+file temp_exit_2000.dta saved
+(0 real changes made)
+(0 real changes made)
+(note: dataset contains 0 observations)
+(note: file temp_exit_2001.dta not found)
+file temp_exit_2001.dta saved
+(0 real changes made)
+(0 real changes made)
+(note: file temp_exit_2002.dta not found)
+file temp_exit_2002.dta saved
+(0 real changes made)
+(1 real change made)
+(note: file temp_exit_2003.dta not found)
+file temp_exit_2003.dta saved
+(0 real changes made)
+(1 real change made)
+(note: file temp_exit_2004.dta not found)
+file temp_exit_2004.dta saved
+(0 real changes made)
+(65 real changes made)
+(note: file temp_exit_2005.dta not found)
+file temp_exit_2005.dta saved
+
+{com}. 
+.         use setyr_PC_`b'_`e', clear
+{txt}
+{com}.                 save temp, replace
+{txt}file temp.dta saved
+
+{com}.                 
+.                 foreach y of local pcyr {c -(}
+{txt}  2{com}.                         sort group`y'
+{txt}  3{com}.                         merge group`y' using temp_exit_`y', update
+{txt}  4{com}.                         tab _m
+{txt}  5{com}.                         drop if _m==2
+{txt}  6{com}.                         drop _m
+{txt}  7{com}.                         {c )-}
+{txt}{p 0 4}
+variable{txt} group1996
+does not uniquely identify observations in
+the master data
+{p_end}
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      1,048       97.31       97.31
+{txt}          2 {c |}{res}         13        1.21       98.51
+{txt}          3 {c |}{res}         16        1.49      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,077      100.00
+{txt}(13 observations deleted)
+{p 0 4}
+variable{txt} group1998
+does not uniquely identify observations in
+the master data
+{p_end}
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      1,063       99.81       99.81
+{txt}          2 {c |}{res}          1        0.09       99.91
+{txt}          4 {c |}{res}          1        0.09      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,065      100.00
+{txt}(1 observation deleted)
+{p 0 4}
+variable{txt} group1999
+does not uniquely identify observations in
+the master data
+{p_end}
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      1,004       94.10       94.10
+{txt}          2 {c |}{res}          3        0.28       94.38
+{txt}          3 {c |}{res}         14        1.31       95.69
+{txt}          4 {c |}{res}         46        4.31      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,067      100.00
+{txt}(3 observations deleted)
+{p 0 4}
+variable{txt} group2000
+does not uniquely identify observations in
+the master data
+{p_end}
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      1,064      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,064      100.00
+{txt}(0 observations deleted)
+{p 0 4}
+variable{txt} group2001
+does not uniquely identify observations in
+the master data
+{p_end}
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      1,064      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,064      100.00
+{txt}(0 observations deleted)
+{p 0 4}
+variable{txt} group2002
+does not uniquely identify observations in
+the master data
+{p_end}
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      1,061       99.72       99.72
+{txt}          3 {c |}{res}          1        0.09       99.81
+{txt}          4 {c |}{res}          2        0.19      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,064      100.00
+{txt}(0 observations deleted)
+{p 0 4}
+variable{txt} group2003
+does not uniquely identify observations in
+the master data
+{p_end}
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      1,052       98.78       98.78
+{txt}          2 {c |}{res}          1        0.09       98.87
+{txt}          3 {c |}{res}         10        0.94       99.81
+{txt}          4 {c |}{res}          2        0.19      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,065      100.00
+{txt}(1 observation deleted)
+{p 0 4}
+variable{txt} group2004
+does not uniquely identify observations in
+the master data
+{p_end}
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      1,061       99.72       99.72
+{txt}          4 {c |}{res}          3        0.28      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,064      100.00
+{txt}(0 observations deleted)
+{p 0 4}
+variable{txt} group2005
+does not uniquely identify observations in
+the master data
+{p_end}
+
+     _merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      1,062       94.15       94.15
+{txt}          2 {c |}{res}         64        5.67       99.82
+{txt}          3 {c |}{res}          2        0.18      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      1,128      100.00
+{txt}(64 observations deleted)
+
+{com}.                 
+.                 tab exit
+
+       {txt}exit {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}         70      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}         70      100.00
+{txt}
+{com}.                 bysort setyr: egen temp = max(exit)
+{txt}(960 missing values generated)
+
+{com}.                 tab temp
+
+       {txt}temp {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}        104      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        104      100.00
+{txt}
+{com}.                         * all codes with the same setyr as the codes that exit also need to be dropped for consistency over time
+.                         keep if temp==1
+{txt}(960 observations deleted)
+
+{com}.                         drop exit
+{txt}
+{com}.                         rename temp exit
+{txt}
+{com}.                 save temp, replace
+{txt}file temp.dta saved
+
+{com}.                         * file with all exit codes that feature in concordance file, we need to append file with original codes
+.                         * some codes that exit may not feature in the setyr file (if they have not changed over time)
+.         
+.         * we want files with exit codes that need to be dropped from data for consistency over time
+.         
+.                 forval y = `b'/`e' {c -(}    
+{txt}  2{com}.                         use temp, clear
+{txt}  3{com}.                                 keep group`y' exit
+{txt}  4{com}.                                 capture append using temp_exit_`y'
+{txt}  5{com}.                                 duplicates drop
+{txt}  6{com}.                                 count
+{txt}  7{com}.                                         * number of PC8 codes that needs to be dropped for consistency over time
+.                                         * specific to chosen time period (if sample period changes, files should be run again)
+.                                 rename group`y' pc8
+{txt}  8{com}.                                 sort pc8
+{txt}  9{com}.                                 save exit_`y', replace
+{txt} 10{com}.                                 {c )-}
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(68 observations deleted)
+{res}   36
+{txt}(note: file exit_1995.dta not found)
+file exit_1995.dta saved
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(84 observations deleted)
+{res}   49
+{txt}(note: file exit_1996.dta not found)
+file exit_1996.dta saved
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(68 observations deleted)
+{res}   36
+{txt}(note: file exit_1997.dta not found)
+file exit_1997.dta saved
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(70 observations deleted)
+{res}   36
+{txt}(note: file exit_1998.dta not found)
+file exit_1998.dta saved
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(73 observations deleted)
+{res}   94
+{txt}(note: file exit_1999.dta not found)
+file exit_1999.dta saved
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(13 observations deleted)
+{res}   91
+{txt}(note: file exit_2000.dta not found)
+file exit_2000.dta saved
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(15 observations deleted)
+{res}   89
+{txt}(note: file exit_2001.dta not found)
+file exit_2001.dta saved
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(15 observations deleted)
+{res}   92
+{txt}(note: file exit_2002.dta not found)
+file exit_2002.dta saved
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(13 observations deleted)
+{res}  104
+{txt}(note: file exit_2003.dta not found)
+file exit_2003.dta saved
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(3 observations deleted)
+{res}  104
+{txt}(note: file exit_2004.dta not found)
+file exit_2004.dta saved
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(66 observations deleted)
+{res}  104
+{txt}(note: file exit_2005.dta not found)
+file exit_2005.dta saved
+
+{com}.                 
+.                 
+. ****************************************************************************    
+. *** Step 6: Generate overall concordance file for implementation in data ***
+. ****************************************************************************                    
+.                 
+. * merge entry/exit codes with final concordance (to know which PC8 codes need to be dropped for consistent coverage over time)
+. 
+.         foreach y of numlist `b'/`e' {c -(}
+{txt}  2{com}.                         use setyr_PC_`b'_`e', clear
+{txt}  3{com}.                         keep group`y' setyr 
+{txt}  4{com}.                         rename group`y' group
+{txt}  5{com}.                         sort group
+{txt}  6{com}.                         drop if group==.
+{txt}  7{com}.                         
+.                         save setyr_PC_`y', replace
+{txt}  8{com}.                         
+.                 use PC_`y', clear
+{txt}  9{com}.                         destring pc, replace
+{txt} 10{com}.                         rename pc group
+{txt} 11{com}.                         sort group
+{txt} 12{com}.                         merge group using setyr_PC_`y'
+{txt} 13{com}.                         tab _m
+{txt} 14{com}.                                 * _m==2 should not occur
+.                         rename group pc8
+{txt} 15{com}.                         rename setyr pc8plus
+{txt} 16{com}.                         keep pc8 pc8plus
+{txt} 17{com}.                         duplicates drop
+{txt} 18{com}.                         sort pc8
+{txt} 19{com}.                         count if pc8==pc8[_n-1]
+{txt} 20{com}.                                 * should not occur
+.                         
+.                         merge pc8 using exit_`y'
+{txt} 21{com}.                         drop if _m==2
+{txt} 22{com}.                         tab exit
+{txt} 23{com}.                         drop _m
+{txt} 24{com}.                         gen year=`y'
+{txt} 25{com}.                         sort pc8
+{txt} 26{com}.                         save temp_`y', replace
+{txt} 27{com}.                         {c )-}
+{txt}(109 observations deleted)
+(note: file setyr_PC_1995.dta not found)
+file setyr_PC_1995.dta saved
+pc has all characters numeric; {res}replaced {txt}as {res}long
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      3,885       80.27       80.27
+{txt}          3 {c |}{res}        955       19.73      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,840      100.00
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res}    0
+{txt}(1 observation deleted)
+
+       exit {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}         35      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}         35      100.00
+{txt}(note: file temp_1995.dta not found)
+file temp_1995.dta saved
+(147 observations deleted)
+(note: file setyr_PC_1996.dta not found)
+file setyr_PC_1996.dta saved
+pc has all characters numeric; {res}replaced {txt}as {res}long
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      3,891       80.93       80.93
+{txt}          2 {c |}{res}          1        0.02       80.95
+{txt}          3 {c |}{res}        916       19.05      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,808      100.00
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res}    0
+{txt}(14 observations deleted)
+
+       exit {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}         35      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}         35      100.00
+{txt}file temp_1996.dta saved
+(147 observations deleted)
+(note: file setyr_PC_1997.dta not found)
+file setyr_PC_1997.dta saved
+pc has all characters numeric; {res}replaced {txt}as {res}long
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      3,891       80.93       80.93
+{txt}          2 {c |}{res}          1        0.02       80.95
+{txt}          3 {c |}{res}        916       19.05      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,808      100.00
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res}    0
+{txt}(1 observation deleted)
+
+       exit {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}         35      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}         35      100.00
+{txt}(note: file temp_1997.dta not found)
+file temp_1997.dta saved
+(148 observations deleted)
+(note: file setyr_PC_1998.dta not found)
+file setyr_PC_1998.dta saved
+pc has all characters numeric; {res}replaced {txt}as {res}long
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      3,895       80.96       80.96
+{txt}          2 {c |}{res}          2        0.04       81.00
+{txt}          3 {c |}{res}        914       19.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,811      100.00
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res}    0
+{txt}(2 observations deleted)
+
+       exit {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}         34      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}         34      100.00
+{txt}file temp_1998.dta saved
+(125 observations deleted)
+(note: file setyr_PC_1999.dta not found)
+file setyr_PC_1999.dta saved
+pc has all characters numeric; {res}replaced {txt}as {res}long
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      3,902       80.60       80.60
+{txt}          2 {c |}{res}          2        0.04       80.64
+{txt}          3 {c |}{res}        937       19.36      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,841      100.00
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res}    0
+{txt}(3 observations deleted)
+
+       exit {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}         91      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}         91      100.00
+{txt}file temp_1999.dta saved
+(130 observations deleted)
+(note: file setyr_PC_2000.dta not found)
+file setyr_PC_2000.dta saved
+pc has all characters numeric; {res}replaced {txt}as {res}long
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      3,899       80.67       80.67
+{txt}          2 {c |}{res}          1        0.02       80.70
+{txt}          3 {c |}{res}        933       19.30      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,833      100.00
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res}    0
+{txt}(1 observation deleted)
+
+       exit {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}         90      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}         90      100.00
+{txt}file temp_2000.dta saved
+(168 observations deleted)
+(note: file setyr_PC_2001.dta not found)
+file setyr_PC_2001.dta saved
+pc has all characters numeric; {res}replaced {txt}as {res}long
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      3,897       81.31       81.31
+{txt}          3 {c |}{res}        896       18.69      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,793      100.00
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res}    0
+{txt}(1 observation deleted)
+
+       exit {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}         88      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}         88      100.00
+{txt}file temp_2001.dta saved
+(197 observations deleted)
+(note: file setyr_PC_2002.dta not found)
+file setyr_PC_2002.dta saved
+pc has all characters numeric; {res}replaced {txt}as {res}long
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      3,897       81.80       81.80
+{txt}          3 {c |}{res}        867       18.20      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,764      100.00
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res}    0
+{txt}(1 observation deleted)
+
+       exit {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}         91      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}         91      100.00
+{txt}file temp_2002.dta saved
+(269 observations deleted)
+(note: file setyr_PC_2003.dta not found)
+file setyr_PC_2003.dta saved
+pc has all characters numeric; {res}replaced {txt}as {res}long
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      3,898       83.06       83.06
+{txt}          3 {c |}{res}        795       16.94      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,693      100.00
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res}    0
+{txt}(2 observations deleted)
+
+       exit {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}        102      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        102      100.00
+{txt}file temp_2003.dta saved
+(279 observations deleted)
+(note: file setyr_PC_2004.dta not found)
+file setyr_PC_2004.dta saved
+pc has all characters numeric; {res}replaced {txt}as {res}long
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      3,898       83.24       83.24
+{txt}          3 {c |}{res}        785       16.76      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,683      100.00
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res}    0
+{txt}(1 observation deleted)
+
+       exit {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}        103      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        103      100.00
+{txt}file temp_2004.dta saved
+(476 observations deleted)
+(note: file setyr_PC_2005.dta not found)
+file setyr_PC_2005.dta saved
+pc has all characters numeric; {res}replaced {txt}as {res}long
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      3,902       86.90       86.90
+{txt}          2 {c |}{res}          1        0.02       86.93
+{txt}          3 {c |}{res}        587       13.07      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,490      100.00
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+{res}    0
+{txt}(65 observations deleted)
+
+       exit {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}         39      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}         39      100.00
+{txt}file temp_2005.dta saved
+
+{com}.         
+.         use temp_`b', clear
+{txt}
+{com}.                 forval y = `b1' / `e' {c -(}
+{txt}  2{com}.                         append using temp_`y'
+{txt}  3{com}.                         {c )-}
+{txt}
+{com}.                 sort pc8 year
+{txt}
+{com}.                 gen synthetic = (pc8plus!=.)
+{txt}
+{com}.                 replace pc8plus = pc8 if pc8plus==.
+{txt}(42855 real changes made)
+
+{com}.                 count if pc8==pc8[_n-1] & year==year[_n-1]
+{res}    0
+{txt}
+{com}.         save "output\pc8_pc8plus_`b'_`e'", replace
+{txt}(note: file output\pc8_pc8plus_1995_2005.dta not found)
+file output\pc8_pc8plus_1995_2005.dta saved
+
+{com}.         outsheet using "output\pc8_pc8plus_`b'_`e'.csv", replace
+{txt}(note: file output\pc8_pc8plus_1995_2005.csv not found)
+
+{com}. 
+. ***************************************************
+. *** Step 4: Concording domestic production data ***
+. ***************************************************     
+. /* Procedure:
+>                 A/ Read in domestic production data for the period `b' - `e'
+>                 B/ Rename the variable recording the original (unconcorded) PC8 products as "pc8"
+>                 C/ Make sure the pc8 variable is string in the production data and sort on "pc8"
+>                 D/ Recode optional (B-list) codes into mandatory codes (provided they feature in data)
+>                         Perform a many-one merge on "pc8" with the file "optional_codes_`b'_`e'_sample"
+>                         If _m==3, replace pc8 with the mandatory code (pc_mand). Drop pc_mand and merge variables.
+>                         
+>                 E/ Recode optional (N-list) codes into mandatory codes (provided they feature in the data)
+>                         Perform a many-one merge on "pc8" with the file "Nlist_codes_1993_2005" 
+>                         If _m==3, replace pc8 with the mandatory code (pc_mand). Drop pc_mand and merge variables.
+>                 
+>                 D/ Destring the PC8 variable (replace). If the destring procedure fails, there are still non-numeric characters in the PC8 codes.
+>                         This should not occur (only N, T, Z, Q and E codes are non-numeric, they should not feature in the data at this point. 
+>                         Verify which codes are causing the problem and address accordingly.
+>                         
+>                 E/ Perform a many-one merge on "pc8" and "year" (numeric format) with the file "cn8_cn8plus_`b'_`e'"
+>                 E/ In principle, all PC8 codes that appear in the data should feature in the concordance
+>                         * If some PC8 codes do not feature in concordance, this could be due to reporting errors or "residual" categories
+>                         * Unmatched PC8 codes need to be dropped (no corresponding PC8+ code)
+>                 F/ Aggregate the data from PC8 product level to PC8+ level (if data are at firm-product level, aggregate from firm-PC8 to firm-PC8+)
+> */              
+. 
+. /* Example: Belgian product-level (PC8) panel production data 
+> 
+>         * Recode optional codes and N-list codes where necessary
+>                 * Using list of optional codes generated above
+>                 * Blist and Nlist: first prepare files
+>                 
+>                 if `b' < 2005 {c -(}
+>                         use Nlist_codes_1993_2005, clear
+>                                 sort pc8
+>                                 count if pc8==pc8[_n-1]
+>                         save temp_nlist, replace
+>                         
+>                         use optional_codes_`b'_`e'_sample, clear
+>                                 duplicates drop
+>                                 sort pc8
+>                                 count if pc8==pc8[_n-1]
+>                         save temp_blist, replace
+>                         {c )-}
+>                         
+>         * merge with data
+>                 * Select production data
+>                                         
+>                         use production_pt_`b'_`e', clear
+>                                 
+>                                 label var lev3v_prod "Production value sold"
+>                                 label var prodcom "PC8 product, string"
+>                                 label var mioQ "Production value sold, mio"
+>                         
+>                                 sort year prodcom
+>                                 count if year==year[_n-1] & prodcom==prodcom[_n-1]
+>                                 rename prodcom pc8
+>                                 
+>                         if `b' < 2005 {c -(} 
+>                                 * merge with list of N-codes to recode if applicable
+>                                         merge pc8 using temp_nlist
+>                                         capture table pc8 if _m==3, c(count lev3v_prod sum lev3v_prod sum mioQ) format(%20.2fc) row
+>                                         replace pc8 = pc_mand if _m==3
+>                                         drop if _m==2
+>                                         drop _m pc_mand
+>                                 
+>                                 * merge with list of B-codes to recode if applicable
+>                                         merge pc8 using temp_blist
+>                                         drop if _m==2
+>                                         capture table pc8 if _m==3, c(count lev3v_prod sum lev3v_prod sum mioQ) format(%20.2fc) row
+>                                         replace pc8 = pc_mand if _m==3
+>                                         drop pc_mand
+>                                         drop _m
+>                         
+>                                 {c )-}
+>                                 
+>                                 destring pc8, replace
+>                                 sort year pc8
+>                                 
+>                                 count if year==year[_n-1] & pc8==pc8[_n-1]
+>                                         * due to recoding, there might be doubles, need to be collapsed
+>                                         * e.g. two optional codes that map into one mandatory code
+>                 
+>                         if `b' < 2005 {c -(} 
+>                                 collapse (sum) lev3v_prod mioQ, by(year pc8)
+>                                         * only mandatory PC8 codes left in the data
+>                                         * these should all feature in the concordance (exception: coding errors, residual (country-specific) categories)
+>                                 {c )-}
+>                                 
+>                                 * concording PC8 products in each year (merge data with only mandatory products with concordance files
+>                                 
+>                                         sort pc8 year
+>                                         merge pc8 year using "output\pc8_pc8plus_`b'_`e'"
+>                                         tab _m
+>                                         replace exit=0 if exit==.
+>                                         table pc8 if _m==1, c(count year sum mioQ sum lev3v_prod) format(%20.2fc) row
+>                                         table exit, c(count pc8 sum mioQ sum lev3v_prod) format(%20.2fc) row
+>                                         table _m, c(count year sum mioQ sum lev3v_prod) format(%20.2fc) row
+>                                         
+>                                         * drop PC8 products not recognized in concordance (coding errors, residual categories)
+>                                                 keep if _m==3
+>                                         
+>                                         * drop PC8 products that need to be dropped for consistency over time
+>                                                 drop if exit==1
+>                                                 
+>                                         * collapse to PC8+ level if applicable
+>                                                 tab year
+>                                                 sort year pc8plus
+>                                                 count if year==year[_n-1] & pc8plus==pc8plus[_n-1]
+>                                                 collapse (sum) lev3v_prod mioQ, by(year pc8plus)
+>                                                 tab year 
+>                                         save production_pt_concorded_`b'_`e', replace
+>                                 
+>                         */
+.                         
+. 
+. 
+. log close
+       {txt}log:  {res}C:\Users\n06017\Documents\Magic Briefcase\pc8_over_time\output\pc8_over_time_1995_2005.smcl
+  {txt}log type:  {res}smcl
+ {txt}closed on:  {res} 1 Aug 2012, 07:04:02
+{txt}{.-}
+{smcl}
+{txt}{sf}{ul off}

@@ -1,0 +1,912 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+       log:  {res}C:\Users\n06017\Documents\SugarSync Shared Folders\Andrew Bernard\Concordance\cn_pc_yearly\2005\output\CN8_PC8_cross_section_2005.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res}18 Jul 2012, 17:00:59
+{txt}
+{com}. 
+. * Base files for concordance: Eurostat Ramon server:
+.         * List of CN8 codes in the chosen year
+.         * List of PC8 codes in the chosen year (only mandatory codes)
+.         * Concordance file CN8-PC8 in the chosen year
+.         * Structure file Prodcom for the chosen year (format can differ in different years)
+.         * The first three files have been translated into usable stata format prior to running this do-file
+.                 
+.         
+. * Basic procedure:
+.         * Concordance file CN8 - PC8 only contains CN8 and PC8 codes 
+.                 * covered by both classifications
+.         * By merging the CN8 and PC8 list with the concordance, it is 
+.                 * possible to identify CN8 codes not covered by PC8 and vice versa
+.         * Loop to identify feedback effects: based on Pierce & Schott (2012, forthcoming)
+.         
+. ***************************************
+. *** 1/ Concordance from CN8 to PC8+ ***
+. ***************************************
+. 
+. * A/ Reading in concordance:
+. 
+.         use "`yr'\cn_pc_`yr'.dta", clear
+{txt}
+{com}.                 
+.                 drop if cn`yr'=="" | pc`yr'==""
+{txt}(1 observation deleted)
+
+{com}.                         
+.                 sort cn`yr' pc`yr'
+{txt}
+{com}.                 keep cn`yr' pc`yr'
+{txt}
+{com}.                 
+.                 count
+{res} 9279
+{txt}
+{com}.                 duplicates drop
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+
+{com}.                 count
+{res} 9279
+{txt}
+{com}.         
+.                 * count # of unique PC8 codes
+.                         * Note: some of these codes are more aggregated than 
+.                         * on the original PC8 list (Z-codes, T-codes)
+.                         * before concording, some codes in production data need to be recoded
+.                         * in these aggregate codes
+.                         * cfr. readme file  
+.                         sort pc`yr'
+{txt}
+{com}.                         count if pc`yr'!=pc`yr'[_n-1]
+{res} 4220
+{txt}
+{com}.                         
+.                 * count # of unique CN8 codes
+.                         * Note: the number of codes is less than in original CN8 classification, 
+.                                 * not all CN8 codes are covered by PC8
+.                                                         
+.                         sort cn`yr'
+{txt}
+{com}.                         count if cn`yr'!=cn`yr'[_n-1]
+{res} 9157
+{txt}
+{com}.                         
+.                         
+. * B/ Identify types of codes CN8-PC8 (one-many, many-one, many-many)
+.                 * one-many and many-many mappings will result in groups of PC8 codes (PC8+ codes)
+.                 
+.         * Identify many-to-one codes CN8-PC8:
+.         * Note: for now, these include many-to-many codes, correction below
+.                 sort pc`yr' cn`yr'
+{txt}
+{com}.                 gen temp=1 if pc`yr'==pc`yr'[_n-1 ]& cn`yr'!=cn`yr'[_n-1]
+{txt}(4220 missing values generated)
+
+{com}.                 by pc`yr': egen many_one=max(temp)
+{txt}(2600 missing values generated)
+
+{com}.                 replace many_one=0 if many_one==.
+{txt}(2600 real changes made)
+
+{com}.                 drop temp
+{txt}
+{com}.                 
+.         * Identify one-to-many codes CN8-PC8:
+.         * Note: for now, these include many-to-many codes, correction below
+.                 
+.                 sort cn`yr' pc`yr'
+{txt}
+{com}.                 gen temp=1 if cn`yr'==cn`yr'[_n-1 ]& pc`yr'!=pc`yr'[_n-1]
+{txt}(9157 missing values generated)
+
+{com}.                 by cn`yr': egen one_many=max(temp)
+{txt}(9035 missing values generated)
+
+{com}.                 replace one_many=0 if one_many==.
+{txt}(9035 real changes made)
+
+{com}.                 drop temp
+{txt}
+{com}. 
+.         * identify many-to-many codes CN8-PC8:
+.                 gen temp=1 if many_one==1 & one_many==1
+{txt}(9047 missing values generated)
+
+{com}.                 sort pc`yr'
+{txt}
+{com}.                 by pc`yr': egen temp2=max(temp)
+{txt}(8983 missing values generated)
+
+{com}.                 sort cn`yr'
+{txt}
+{com}.                 by cn`yr': egen many_many=max(temp2)
+{txt}(8977 missing values generated)
+
+{com}.                 replace many_many=0 if many_many==.
+{txt}(8977 real changes made)
+
+{com}. 
+.         * Identify simple codes CN8-PC8:
+.                 gen simple=0
+{txt}
+{com}.                 replace simple=1 if many_one==0 & one_many==0
+{txt}(2588 real changes made)
+
+{com}. 
+.         * Correction one-to-many and many-to-one coding:
+.         * many-to-many codes need to be taken out.
+.                 replace one_many=0 if many_many==1
+{txt}(238 real changes made)
+
+{com}.                 replace many_one=0 if many_many==1
+{txt}(296 real changes made)
+
+{com}.                 drop temp temp2
+{txt}
+{com}.                 
+.         save "`yr'\temp", replace
+{txt}(note: file 2005\temp.dta not found)
+file 2005\temp.dta saved
+
+{com}. 
+.         * Count types:
+.                 
+.                 use "`yr'\temp", clear
+{txt}
+{com}.                         sort pc`yr'
+{txt}
+{com}.                         keep if pc`yr'!=pc`yr'[_n-1]
+{txt}(5059 observations deleted)
+
+{com}.                         count
+{res} 4220
+{txt}
+{com}.                         tab one_many
+
+   {txt}one_many {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}      4,214       99.86       99.86
+{txt}          1 {c |}{res}          6        0.14      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,220      100.00
+{txt}
+{com}.                         tab many_one
+
+   {txt}many_one {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}      2,638       62.51       62.51
+{txt}          1 {c |}{res}      1,582       37.49      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,220      100.00
+{txt}
+{com}.                         tab many_many
+
+  {txt}many_many {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}      4,176       98.96       98.96
+{txt}          1 {c |}{res}         44        1.04      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,220      100.00
+{txt}
+{com}.                         tab simple
+
+     {txt}simple {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}      1,632       38.67       38.67
+{txt}          1 {c |}{res}      2,588       61.33      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      4,220      100.00
+{txt}
+{com}.         
+.                 use "`yr'\temp", clear
+{txt}
+{com}.                         sort cn`yr'
+{txt}
+{com}.                         keep if cn`yr'!=cn`yr'[_n-1]
+{txt}(122 observations deleted)
+
+{com}.                         count
+{res} 9157
+{txt}
+{com}.                         tab one_many
+
+   {txt}one_many {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}      9,154       99.97       99.97
+{txt}          1 {c |}{res}          3        0.03      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      9,157      100.00
+{txt}
+{com}.                         tab many_one
+
+   {txt}many_one {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}      2,774       30.29       30.29
+{txt}          1 {c |}{res}      6,383       69.71      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      9,157      100.00
+{txt}
+{com}.                         tab many_many
+
+  {txt}many_many {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}      8,974       98.00       98.00
+{txt}          1 {c |}{res}        183        2.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      9,157      100.00
+{txt}
+{com}.                         tab simple
+
+     {txt}simple {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}      6,569       71.74       71.74
+{txt}          1 {c |}{res}      2,588       28.26      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      9,157      100.00
+{txt}
+{com}.                 
+.                 
+. * C/ Create groupings (assign setyr to different mappings)
+.         * these setyr's will only be final after identification loop below
+.                 
+.         use "`yr'\temp", clear
+{txt}
+{com}. 
+.                  sort one_many many_one
+{txt}
+{com}.                          * create groupings for one_many:
+.                          egen tmp=group(cn`yr') if one_many==1
+{txt}(9273 missing values generated)
+
+{com}.          
+.                  * create groupings for many_one:
+.                         * Numbering needs to start after numbering for one_many
+.                          egen tmpno=max(tmp)
+{txt}
+{com}.                          if tmpno==. {c -(}
+.                                  * if there are no 1-M groups
+.                                  drop tmpno
+.                                  gen tmpno=0
+.                                         {c )-}
+{txt}
+{com}.                                  
+.                          egen tmp2=group(pc`yr') if many_one==1 
+{txt}(2896 missing values generated)
+
+{com}.                          gen tmp3=tmpno + tmp2 
+{txt}(2896 missing values generated)
+
+{com}.                          drop tmpno
+{txt}
+{com}.  
+.                  * create groupings for many_many:
+.                          * Numbering needs to start after numbering for many_one
+.                         egen tmpno=max(tmp3)
+{txt}
+{com}.                         if tmpno==. {c -(}
+.                                 * if there are no M-1 groups
+.                                 drop tmpno
+.                                 egen tmpno=max(tmp)
+.                                 {c )-}
+{txt}
+{com}.                         if tmpno==. {c -(}
+.                                 * if there are no 1-M groups
+.                                 drop tmpno
+.                                 gen tmpno=0
+.                                         {c )-}
+{txt}
+{com}.                         egen tmp4=group(pc`yr') if many_many==1
+{txt}(8977 missing values generated)
+
+{com}.                                  * we could group on cn`yr' here as well, needs to be checked for feedback effects anyway
+.                         gen tmp5=tmpno + tmp4 
+{txt}(8977 missing values generated)
+
+{com}.                         drop tmpno
+{txt}
+{com}.         
+.                  * for simple codes, we assign a setyr to the simple change:
+.                         egen tmpno=max(tmp5)
+{txt}
+{com}.                         if tmpno==. {c -(}
+.                               * if there are no M-M groups
+.                               drop tmpno
+.                               egen tmpno=max(tmp3)
+.                                {c )-}
+{txt}
+{com}.                         if tmpno==. {c -(}
+.                               * if there are no M-1 groups
+.                               drop tmpno
+.                               egen tmpno=max(tmp)
+.                                {c )-}
+{txt}
+{com}.                         if tmpno==. {c -(}
+.                               * if there are no 1-M groups
+.                          drop tmpno
+.                                gen tmpno=0
+.                          {c )-}
+{txt}
+{com}.                         egen tmp6=group(pc`yr') if simple==1
+{txt}(6691 missing values generated)
+
+{com}.                         gen tmp7=tmpno + tmp6
+{txt}(6691 missing values generated)
+
+{com}.                         drop tmpno
+{txt}
+{com}.   
+.                         egen code=rowtotal(tmp tmp3 tmp5 tmp7)
+{txt}
+{com}.                         drop tmp tmp2-tmp7
+{txt}
+{com}.                
+.          
+. * D/ loop to identify feedback effects M-M groupings within each year 
+.                 * Based on Pierce and Schott (2009, NBER 14837)
+.         * Explanation of loop:
+.                 * function mod(`zzz', 2) is used to switch even and odd turns in the loop
+.                 * modulus(x,y) = x - y * int(x/y)
+.                 * equal to 0 if zzz=2, 4, 6, 8, ... 
+.                 * different from 0 for zzz=3, 5, 7, ...
+.                 * each time the setyr's are grouped by new or obsolete
+.                 * equivalent to sorting in excel by new and obsolete
+.                 * to identify feedback effects
+. 
+.                  bysort cn`yr': egen c1 = min(code)
+{txt}
+{com}.                 * assign min setyr by cn`yr' (we grouped by pc`yr' above for M-M)
+.                  local zzz = 2
+{txt}
+{com}.                  local stop = 0
+{txt}
+{com}.                  while `stop'==0 {c -(}
+{txt}  2{com}.                  noisily display [`zzz']
+{txt}  3{com}.                  local zlag = `zzz'-1
+{txt}  4{com}.                  if mod(`zzz',2)==0 {c -(}
+{txt}  5{com}.                         bysort pc`yr': egen c`zzz'= min(c`zlag')
+{txt}  6{com}.                   {c )-}
+{txt}  7{com}.                  if mod(`zzz',2)~=0 {c -(}
+{txt}  8{com}.                         bysort cn`yr': egen c`zzz'= min(c`zlag')
+{txt}  9{com}.                   {c )-}
+{txt} 10{com}.          
+.                  compare c`zzz' c`zlag'
+{txt} 11{com}.                  gen idx = c`zzz'==c`zlag'
+{txt} 12{com}.                  tab idx
+{txt} 13{com}.                  local stop = r(r)==1
+{txt} 14{com}.                  local zzz = `zzz'+1
+{txt} 15{com}.                  display r(r) " " [`stop']
+{txt} 16{com}.                  drop idx
+{txt} 17{com}.                  {c )-}
+2
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c2<c1                   {res}       96           -28    -7.854167          -1
+{txt}c2=c1                   {res}     9183
+{txt}{col 24}{hline 10}
+jointly defined         {res}     9279           -28    -.0812588           0
+{txt}{col 24}{hline 10}
+total                   {res}     9279
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}         96        1.03        1.03
+{txt}          1 {c |}{res}      9,183       98.97      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      9,279      100.00
+2 0
+3
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c3<c2                   {res}       63           -28    -10.93651          -1
+{txt}c3=c2                   {res}     9216
+{txt}{col 24}{hline 10}
+jointly defined         {res}     9279           -28    -.0742537           0
+{txt}{col 24}{hline 10}
+total                   {res}     9279
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}         63        0.68        0.68
+{txt}          1 {c |}{res}      9,216       99.32      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      9,279      100.00
+2 0
+4
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c4<c3                   {res}        9           -28           -5          -1
+{txt}c4=c3                   {res}     9270
+{txt}{col 24}{hline 10}
+jointly defined         {res}     9279           -28    -.0048497           0
+{txt}{col 24}{hline 10}
+total                   {res}     9279
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}          9        0.10        0.10
+{txt}          1 {c |}{res}      9,270       99.90      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      9,279      100.00
+2 0
+5
+
+{txt}{col 41}{hline 10} difference {hline 10}
+{col 29}count{col 41}minimum{col 54}average{col 66}maximum
+{hline 72}
+c5=c4                   {res}     9279
+{txt}{col 24}{hline 10}
+jointly defined         {res}     9279             0            0           0
+{txt}{col 24}{hline 10}
+total                   {res}     9279
+
+        {txt}idx {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}      9,279      100.00      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      9,279      100.00
+1 1
+{txt}
+{com}.   
+.         local yyy = `zzz' - 1
+{txt}
+{com}.         gen setyr = c`yyy'
+{txt}
+{com}.         drop c1-c`yyy'
+{txt}
+{com}.  
+.         * Verify coding:
+.                 * counts should equal zero in both cases
+.                 
+.                sort pc`yr' 
+{txt}
+{com}.                count if pc`yr'==pc`yr'[_n-1] & setyr!=setyr[_n-1]
+{res}    0
+{txt}
+{com}.          
+.                sort cn`yr'
+{txt}
+{com}.                count if cn`yr'==cn`yr'[_n-1] & setyr!=setyr[_n-1]
+{res}    0
+{txt}
+{com}.           
+.         * recode, so setyr are numbered consecutively 
+.                sort setyr
+{txt}
+{com}.                egen setyr2=group(setyr)
+{txt}
+{com}.                drop setyr 
+{txt}
+{com}.                rename setyr2 setyr
+{txt}
+{com}.                
+.                sort setyr
+{txt}
+{com}.                count if setyr!=setyr[_n-1]
+{res} 4185
+{txt}
+{com}.         
+.         * we need variable setyr equal to PC8 if only one PC8 code in that setyr
+.                 * how many pc8+ codes and how many codes per group?
+.                         gen tmp=setyr
+{txt}
+{com}.                         tostring setyr, replace
+{txt}setyr was {res:float} now {res:str4}
+
+{com}.                         replace setyr=pc`yr' if simple==1 | many_one==1
+{txt}setyr was {res}str4{txt} now {res}str8
+{txt}(8971 real changes made)
+
+{com}.                         gen synthetic = (simple==0 & many_one==0)
+{txt}
+{com}.                         rename setyr pc8plus
+{txt}
+{com}.                         drop tmp code
+{txt}
+{com}.                         
+.                         sort pc8plus
+{txt}
+{com}.                         count if pc8plus!=pc8plus[_n-1]
+{res} 4185
+{txt}
+{com}.         save "`yr'\output\concordance_cn8_pc8plus_`yr'", replace
+{txt}file 2005\output\concordance_cn8_pc8plus_2005.dta saved
+
+{com}.         
+. 
+. 
+. ******************************************
+. *** 2/ Differences in coverage CN8-PC8 ***
+. ******************************************
+.  
+. * A/ List of PC8 codes not covered in concordance (auxiliary file)
+.         * we need to generate a list of PC8 codes that features in concordance, but not in PC8 list
+.                 * This file can be used to find the aggregated (Z) codes and all PC8 codes not covered by CN8
+.                 * To identify the aggregates, the Prodcom structure file can be used
+.                 * End of PDF file: list of Z-aggregates (NACE 99.z)
+.                 * List of PC8 codes not covered by CN8 + PC8 codes that need to be recoded in aggregates
+.                         * Based on the auxiliary file generated here and Prodcom List for `yr' to identify codes and aggregates:
+.                         * PC8_`yr'_special_codes
+.                 
+.                 use "`yr'\pc_`yr'", clear
+{txt}
+{com}.                         rename pc pc`yr'
+{txt}
+{com}.                         sort pc`yr'
+{txt}
+{com}.                 save "`yr'\temp", replace
+{txt}file 2005\temp.dta saved
+
+{com}.         
+.                 use "`yr'\output\concordance_cn8_pc8plus_`yr'", clear
+{txt}
+{com}.                         sort pc`yr'
+{txt}
+{com}.                         merge pc`yr' using "`yr'\temp"
+{txt}{p 0 4}
+variable{txt} pc2005
+does not uniquely identify observations in
+the master data
+{p_end}
+
+{com}.                                 * _m==1 are codes that feature in concordance, not on PC8 list
+.                                 * these are the aggregated codes (Z-codes)
+.                                 * _m==2 are industrial services + breakdowns of Z-aggregates
+.                         keep if _m==1 | _m==2
+{txt}(8929 observations deleted)
+
+{com}.                         tab _m
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          1 {c |}{res}        350       53.76       53.76
+{txt}          2 {c |}{res}        301       46.24      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}        651      100.00
+{txt}
+{com}.                 saveold "`yr'\output\PC8_`yr'_not_in_concordance", replace
+{txt}file 2005\output\PC8_2005_not_in_concordance.dta saved
+
+{com}.                 outsheet using "`yr'\output\PC8_`yr'_not_in_concordance.csv", replace
+{txt}
+{com}. 
+. * B/ List of CN8 codes not covered in concordance
+. 
+.         * Read in file with ALL CN8 codes for `yr'
+.         * including CN8 codes not covered by PC8 classification
+.         
+.                 use "`yr'\CN_`yr'", replace
+{txt}
+{com}.                         duplicates drop
+
+{p 0 4}{txt}Duplicates in terms of {txt} all variables{p_end}
+
+(0 observations are duplicates)
+
+{com}.                         sort cn`yr'
+{txt}
+{com}.                         count
+{res}10096
+{txt}
+{com}.                         save "`yr'\temp", replace
+{txt}file 2005\temp.dta saved
+
+{com}.                                 * Number of unique CN8 codes in year `yr'
+.                         
+.         * Merge concordance file CN8-PC8 with file with ALL CN8 codes  
+.                 * identification of CN8 codes not on the Prodcom List
+.                 
+.                 use "`yr'\output\concordance_cn8_pc8plus_`yr'", clear
+{txt}
+{com}.                         sort cn`yr'
+{txt}
+{com}.                         merge cn`yr' using "`yr'\temp"
+{txt}{p 0 4}
+variable{txt} cn2005
+does not uniquely identify observations in
+the master data
+{p_end}
+
+{com}.                         tab _m
+
+     {txt}_merge {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          2 {c |}{res}        939        9.19        9.19
+{txt}          3 {c |}{res}      9,279       90.81      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}     10,218      100.00
+{txt}
+{com}.                                 * _m==2 implies CN8 codes not on PC8 list
+.                         gen notpc = 0
+{txt}
+{com}.                         replace notpc = 1 if _m==2
+{txt}(939 real changes made)
+
+{com}.                         label var notpc "CN8 not covered by PC8"
+{txt}
+{com}.                 drop _m
+{txt}
+{com}.                 tab notpc
+
+    {txt}CN8 not {c |}
+ covered by {c |}
+        PC8 {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+          0 {c |}{res}      9,279       90.81       90.81
+{txt}          1 {c |}{res}        939        9.19      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}     10,218      100.00
+{txt}
+{com}.                         * notpc=1 means that these CN8 products are not covered by the Prodcom List in `yr'.
+.                         * These CN8 products do not feature in concordance file CN8-PC8 for `yr'
+.                         * They have to be dropped from the trade data before concording 
+.                         
+.         saveold "`yr'\output\concordance_cn8_pc8plus_`yr'", replace
+{txt}file 2005\output\concordance_cn8_pc8plus_2005.dta saved
+
+{com}.         outsheet using "`yr'\output\concordance_cn8_pc8plus_`yr'.csv", replace
+{txt}
+{com}.                 * This concordance takes into account which CN8 codes need to be dropped before aggregating to PC8
+.                 * and it identifies the PC8+ groups
+.                 * this is the concordance that can be used to merge with trade and production data data
+.                 * necessary steps:
+.                         * merge trade data with concordance file
+.                         * drop all codes where notpc==1 (CN8 codes not covered by PC8)
+.                         * Cases where _m==1 (unmatched CN8 codes in data)
+.                                 * these could be "residual" categories, ending or starting with 99
+.                                 * or mistakes in reporting
+.                                 * need to be dropped from data (no corresponding production data)
+.                         * Concord CN8 to PC8+ and aggregate product-level data to PC8+ level
+.                         * For production data: drop PC8 products not covered by concordance
+.                                 * + recode special codes + aggregate to PC8+ level
+.                         
+. 
+. *************************************
+. *** 3/ Concording production data ***
+. *************************************                   
+. /* Procedure:
+>                 A/ Read in domestic production data
+>                 B/ Recode all optional codes in the data (if applicable)
+>                 C/ Merge the production data with the file "PC8_`yr'_special_codes" on variable "pc`yr'"
+>                 D/ Drop all products where the "type" is "industrial services" or "no cn correspondence"
+>                 E/ Recode all products where the type is "aggregate" (replace pc`yr' = new_code if type=="aggregate")
+>                 F/ Merge the (recoded) production data with concordance file "concordance_pc8_pc8plus_`yr'"
+>                         * In principle, all PC8 codes that appear in the data should feature in the concordance
+>                         * If some PC8 codes do not feature in concordance, this could be due to reporting errors or "residual" categories
+>                         * Unmatched PC8 codes in the data need to be dropped (no corresponding PC8+ code)
+>                 F/ Aggregate the data from (firm-)PC8 product level to (firm-)PC8+ level
+> */              
+. 
+. /* Example using Belgian data at PC8 product level
+> 
+> 
+>         * Optional codes: Blist and Nlist: prepare files
+>                 
+>                 if `yr' < 2005 {c -(}
+>                         use Nlist_codes_1993_2005, clear
+>                                 sort pc8
+>                                 count if pc8==pc8[_n-1]
+>                         save temp_nlist, replace
+>                         
+>                         use "`yr'\PC_`yr'_Blist", clear
+>                                 tostring pc, g(pc8)
+>                                 sort pc8
+>                                 drop pc
+>                                 merge pc8 using optional_codes_1993_2005
+>                                 tab _m
+>                                 drop if _m==2
+>                                         * _m==1 should not occur
+>                                 drop _m
+>                                 duplicates drop
+>                                 sort pc8
+>                                 count if pc8==pc8[_n-1]
+>                         save temp_blist, replace
+>                         {c )-}
+>                 
+>         * temp concordance files:
+>                 use "`yr'\output\concordance_cn8_pc8plus_`yr'", replace
+>                         keep pc`yr' pc8plus synthetic
+>                         drop if pc`yr'==""
+>                         duplicates drop
+>                         sort pc`yr'
+>                         count if pc`yr'==pc`yr'[_n-1]
+>                 save temp_domprod, replace
+>                 
+>                 use "`yr'\output\concordance_cn8_pc8plus_`yr'", replace
+>                         keep cn`yr' pc8plus notpc
+>                         duplicates drop
+>                         sort cn`yr'
+>                         count if cn`yr'==cn`yr'[_n-1]
+>                 save temp_trade, replace
+> 
+>         
+>         * Read in production data + recode where necessary:
+>                 
+>                 use "D:\Users\Ilke\production_pt_1995_2008", clear
+>                 *use ${c -(}hdd{c )-}production_pt_1995_2008, clear
+>                                 
+>                 label var lev3v_prod "Production value sold"
+>                 label var prodcom "PC8 product, string"
+>                 label var mioQ "Production value sold, mio"
+>                         
+>                 keep if year==`yr'
+>                 sort prodcom
+>                 count if prodcom==prodcom[_n-1]
+>                 rename prodcom pc8
+>                 
+>                 * optional codes
+>         
+>                         if `yr' < 2005 {c -(}        
+>                                 * merge with list of N-codes to recode if applicable
+>                                         merge pc8 using temp_nlist
+>                                         tab _m
+>                                         capture table pc8 if _m==3, c(count lev3v_prod sum lev3v_prod sum mioQ) format(%20.2fc) row
+>                                         replace pc8 = pc_mand if _m==3
+>                                         drop if _m==2
+>                                         drop _m pc_mand
+>                                 
+>                                 * merge with list of B-codes to recode if applicable
+>                                         sort pc8
+>                                         merge pc8 using temp_blist
+>                                         tab _m
+>                                         drop if _m==2
+>                                         capture table pc8 if _m==3, c(count lev3v_prod sum lev3v_prod sum mioQ) format(%20.2fc) row
+>                                         replace pc8 = pc_mand if _m==3
+>                                         drop pc_mand
+>                                         drop _m
+>                         
+>                                 {c )-}
+>                                 
+>                                 sort pc8
+>                                 
+>                                 count if pc8==pc8[_n-1]
+>                                         * due to recoding, there might be doubles, need to be collapsed
+>                                         * e.g. two optional codes that map into one mandatory code
+>                 
+>                         if `yr' < 2005 {c -(}        
+>                                 collapse (sum) lev3v_prod mioQ, by(pc8)
+>                                         * only mandatory PC8 codes left in the data
+>                                         {c )-}
+>                         
+>                         sort pc8
+>                         save ${c -(}hdd{c )-}production_`yr'_concorded, replace
+>                                 
+>                 * Special codes (industrial services, aggregates)
+>                         insheet using "`yr'\PC8_`yr'_special_codes.csv", clear delimiter(";")
+>                                 tostring pc`yr', g(pc8)
+>                                 keep pc8 new_code type
+>                                 tab type
+>                                 sort pc8
+>                                 count if pc8==pc8[_n-1]
+>                         save temp, replace
+>                         
+>                         use ${c -(}hdd{c )-}production_`yr'_concorded, clear
+>                                 merge pc8 using temp
+>                                 tab _m
+>                                 tab type if _m==3
+>                                 drop if type=="industrial services" | type=="no cn correspondence"
+>                                 tab type
+>                                 replace pc8 = new_code if _m==3
+>                                 
+>                                 * there can again be doubles after recoding into aggregates
+>                                         sort pc8
+>                                         count if pc8==pc8[_n-1]
+>                                         collapse (sum) lev3v_prod mioQ, by(pc8)
+>                                                 * only mandatory and Z-aggregates, all codes should feature in concordance after this step
+>                                         sort pc8
+>                                         count if pc8==pc8[_n-1]
+>                                         drop if lev3v_prod==0 | lev3v_prod==.
+>                 
+>                 * concording PC8 products into PC8+ classification
+>                                 
+>                         rename pc8 pc`yr'
+>                         sort pc`yr'
+>                         merge pc`yr' using temp_domprod
+>                         
+>                         tab _m
+>                         
+>                         table pc`yr' if _m==1, c(sum mioQ count mioQ)
+>                                         
+>                         * drop PC8 products not recognized in concordance (coding errors, residual categories)
+>                                 keep if _m==3
+>                                         
+>                         * collapse to PC8+ level if applicable
+>                                 sort pc8plus 
+>                                 count if pc8plus==pc8plus[_n-1]
+>                                 
+>                                 collapse (sum) lev3v_prod mioQ, by(pc8plus)
+>                                 
+>                                 sort pc8plus 
+>                                 count if pc8plus==pc8plus[_n-1]
+>                                         * should be unique
+>                                 count
+>                                 
+>                         save ${c -(}hdd{c )-}production_`yr'_concorded, replace   
+>                         
+>                                 
+> **********************************************
+> *** 4/ Concording international trade data ***
+> **********************************************                  
+> /* Procedure:
+>                 A/ Read in international trade data
+>                 B/ Merge the trade data with the file "concordance_cn8_hs6plus_`yr'" on variable "cn`yr'"
+>                 C/ Drop all products where the dummy "notpc" equals one (these are CN8 products not covered by PC8)
+>                         * In principle, all CN8 codes that appear in the data should feature in the concordance
+>                         * If some CN8 codes do not feature in concordance, this could be due to reporting errors or "residual" categories
+>                         * Unmatched CN8 codes in the data need to be dropped (no corresponding PC8 code)
+>                 F/ Aggregate the data from firm-CN8 product level to firm-HS6+ level
+> */                      
+> 
+> /* Example using Belgian trade data at CN8 product level
+> */
+>         use "D:\Users\Ilke\goods_pt_1993_2010", clear
+> *       use ${c -(}hdd{c )-}goods_pt_1993_2010, clear
+>                                 * read in data and label vars
+>                                 
+>                 label var valueII "Instrastat import value"
+>                 label var valueIE "Extrastat import value"
+>                 label var valueXI "Intrastat export value"
+>                 label var valueXE "Extrastat import value"
+>                                 
+>                 describe
+>                 keep if year==`yr'
+>                         
+>                 * merge annual CN8 codes with their corresponding PC8+ code
+>                         * and drop CN8 products not covered by PC8 list
+>                 
+>                         sort cn8 
+>                         rename cn8 cn`yr'
+>                         
+>                         merge cn`yr' using temp_trade
+>                         tab _m
+>                         table cn`yr' if _m==1, c(sum valueII sum valueIE sum valueXE sum valueXI) format(%20.2fc) row
+>                         keep if _m==3
+>                         
+>                         table notpc, c(sum valueII sum valueIE sum valueXE sum valueXI) format(%20.2fc) row
+>                         drop if notpc==1
+>                         
+>                         tab year
+>                         sort year pc8plus
+>                         collapse (sum) valueII valueIE valueXI valueXE, by(pc8plus)
+>                         sort pc8plus
+>                         count if pc8plus==pc8plus[_n-1]
+>                                 * should be unique
+>                         count
+>                         
+>                 save ${c -(}hdd{c )-}goods_pt_concorded_`yr', replace
+>                 
+>                         
+> *****************************************************
+> *** 5/ Merging domestic production and trade data ***
+> *****************************************************                   
+> /* Procedure:
+>                 A/ Sort international trade and production data at firm-PC8+ level
+>                 B/ Merge the two data sets on (the firm identifier and) "pc8plus" (common product identifier)
+> */                      
+> 
+> /* Example using Belgian data at product-level (PC8+) */
+>         use ${c -(}hdd{c )-}goods_pt_concorded_`yr', clear
+>                 merge pc8plus using ${c -(}hdd{c )-}production_`yr'_concorded
+>                 
+>                 tab _m
+>                 foreach var of varlist valueII valueIE valueXI valueXE mioQ lev3v_prod {c -(}        
+>                         replace `var' = 0 if `var'==.
+>                         {c )-}
+>                 
+>         save ${c -(}hdd{c )-}trade_prod_pc8plus_`yr', replace
+> */
+.         
+. log close
+       {txt}log:  {res}C:\Users\n06017\Documents\SugarSync Shared Folders\Andrew Bernard\Concordance\cn_pc_yearly\2005\output\CN8_PC8_cross_section_2005.smcl
+  {txt}log type:  {res}smcl
+ {txt}closed on:  {res}18 Jul 2012, 17:01:03
+{txt}{.-}
+{smcl}
+{txt}{sf}{ul off}
