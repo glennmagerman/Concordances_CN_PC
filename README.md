@@ -1,14 +1,18 @@
-# Concordances_CN_PC
- Listings, correspondences and mappings of PC and CN product classifications.
+# Correspondences of EU Product Classifications
+Listings, correspondences and mappings of Prodcom (PC) and Combined Nomenclature (CN) product classifications at the 8-digit numerical level.
 
 ## Overview
-This set of programs creates lists of numerical product codes by year (CN8 and PC8), their changes over time from t-1 to t, and mappings from CN to PC. 
+This set of codes creates lists of numerical product codes by year (CN8 and PC8), their changes over time from t-1 to t, and mappings from CN to PC for the years 2001 up to 2014. 
 
 See "Correspondences of EU Product Classifications", Duprez and Magerman (2022) for further information.
 
-## Running the correspondences
-To obtain the lists and correspondences, copy the folder, set the correct absolute folder path for your system and run notebooks > master.do. This creates all the necessary output. Raw datasets are in "raw", which might need to be unzipped first. Final datasets are available in "clean", in both .dta (Stata 17) and .tsv formats for further use.
+## Files for direct use
+You can find all correspondences in /output. Final datasets are available in both .dta (Stata 17) and .tsv formats for further use.
 
+## Running the correspondences
+1. Pull or copy the repository to a preferred location.
+2. Inside /src, open _main.do. Change the absolute path to your location.
+3. Run /src/_main.do. This file calls all codes, creates subdirectories as needed, and creates all outputs in /output. 
 
 ## Remarks
 If you use any of these listings, correspondences or mappings, please cite "Correspondences of EU Product Classifications", by Cedric Duprez and Glenn Magerman (2022).
