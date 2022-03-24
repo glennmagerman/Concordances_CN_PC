@@ -4,7 +4,7 @@ Listings, correspondences and mappings of Prodcom (PC) and Combined Nomenclature
 ## Overview
 This set of codes creates lists of numerical product codes by year (CN8 and PC8), their changes over time from t-1 to t, and mappings from CN to PC for the years 2001 up to 2014. 
 
-See "Correspondences of EU Product Classifications", Duprez and Magerman (2022) for further information (labeled concordances_live.pdf in this repo).
+See concordances_live.pdf in this repo for further information.
 
 ## Files for direct use
 You can find all correspondences in /output. Final datasets are available in both .dta (Stata 17) and .tsv formats for further use.
