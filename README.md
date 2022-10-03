@@ -18,6 +18,6 @@ Raw files are in /input. Codes are in /src. Output is generated in /output. /han
 
 ## Remarks
 
-If you have any comments or questions, please let us know: glenn.magerman@ulb.be
+If you have any comments or questions, please let me know: glenn.magerman@ulb.be
 Thank you! 
 
